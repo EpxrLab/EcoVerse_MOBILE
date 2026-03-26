@@ -16,6 +16,8 @@ import ParentSettings from "./screens/ParentSettings";
 import ParentChildren from "./screens/ParentChildren";
 import ParentChildDetail from "./screens/ParentChildDetail";
 import ParentProfile from "./screens/ParentProfile";
+import { ParentAllRewards } from "./screens/ParentAllRewards";
+import Toast from "react-native-toast-message";
 
 const PlaceholderScreen = ({ route }) => (
   <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -117,8 +119,10 @@ export default function App() {
             options={{ animation: "slide_from_right" }}
           />
           <Stack.Screen name="ParentProfile" component={ParentProfile} />
+          <Stack.Screen name="ParentAllRewards" component={ParentAllRewards} />
         </Stack.Navigator>
       </NavigationContainer>
+      <Toast />
     </SafeAreaProvider>
   );
 }
