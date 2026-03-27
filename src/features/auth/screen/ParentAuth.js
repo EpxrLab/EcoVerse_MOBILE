@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,14 +13,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MotiView } from "moti";
-import { Phone, Lock, Eye, EyeOff } from "lucide-react-native";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
+import { loginFunction } from "../services";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width, height } = Dimensions.get("window");
+const { height } = Dimensions.get("window");
 
-const MOCK_PHONE = "0901234567";
-const MOCK_PASSWORD = "123";
-
-// ─── Floating leaf shapes ────────────────────────────────────────────────────
+// ─── Floating orbs ────────────────────────────────────────────────────────────
 function FloatingOrb({ size, color, style, delay = 0 }) {
   return (
     <MotiView
@@ -47,7 +46,7 @@ function FloatingOrb({ size, color, style, delay = 0 }) {
   );
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
+// ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ message, type, visible }) {
   return (
     <MotiView
@@ -69,16 +68,16 @@ function Toast({ message, type, visible }) {
   );
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ParentAuth() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [phoneFocused, setPhoneFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const [passFocused, setPassFocused] = useState(false);
   const [toast, setToast] = useState({
     visible: false,
@@ -92,20 +91,31 @@ export default function ParentAuth() {
   };
 
   const handleLogin = async () => {
-    if (!phone.trim() || !password.trim()) {
+    if (!email.trim() || !password.trim()) {
       showToast("Vui lòng nhập đầy đủ thông tin", "error");
       return;
     }
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsLoading(false);
-
-    if (phone === MOCK_PHONE && password === MOCK_PASSWORD) {
-      showToast("Chào mừng trở lại! 🌿", "success");
-      setTimeout(() => navigation.navigate("ParentHome"), 1100);
-    } else {
-      showToast("Thông tin đăng nhập không đúng", "error");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      showToast("Email không hợp lệ", "error");
+      return;
     }
+    setIsLoading(true);
+
+    const payload = {
+      emailOrUsername: email,
+      password: password,
+    };
+    const res = await loginFunction(payload);
+    if (res) {
+      showToast("Chào mừng trở lại! 🌿", "success");
+      await AsyncStorage.setItem("accessToken", res?.data?.accessToken);
+      await AsyncStorage.setItem("refreshToken", res?.data?.refreshToken);
+      navigation.navigate("ParentHome");
+    } else {
+      showToast("Email hoặc mật khẩu không đúng", "error");
+    }
+    setIsLoading(false);
   };
 
   return (
@@ -114,11 +124,10 @@ export default function ParentAuth() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        {/* ── Background layer ── */}
+        {/* Background */}
         <View style={styles.heroBg} />
-        <View style={styles.heroOverlay} />
 
-        {/* Floating orbs */}
+        {/* Orbs */}
         <FloatingOrb
           size={180}
           color="rgba(52,211,153,0.12)"
@@ -161,9 +170,8 @@ export default function ParentAuth() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Hero section ── */}
+          {/* ── Hero ── */}
           <View style={styles.heroSection}>
-            {/* Logo mark */}
             <MotiView
               from={{ opacity: 0, scale: 0.5, rotate: "-20deg" }}
               animate={{ opacity: 1, scale: 1, rotate: "0deg" }}
@@ -189,43 +197,43 @@ export default function ParentAuth() {
             </MotiView>
           </View>
 
-          {/* ── Form panel ── */}
+          {/* ── Panel ── */}
           <MotiView
             from={{ opacity: 0, translateY: 60 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "spring", damping: 20, delay: 400 }}
             style={styles.panel}
           >
-            {/* Panel handle */}
             <View style={styles.panelHandle} />
 
             <Text style={styles.panelTitle}>Đăng nhập</Text>
             <Text style={styles.panelSub}>Dành cho Phụ huynh</Text>
 
-            {/* Phone field */}
+            {/* Email field */}
             <MotiView
-              animate={{ borderColor: phoneFocused ? "#10B981" : "#E5E7EB" }}
+              animate={{ borderColor: emailFocused ? "#10B981" : "#E5E7EB" }}
               transition={{ type: "timing", duration: 180 }}
               style={styles.fieldWrap}
             >
               <View
                 style={[
                   styles.fieldIconBox,
-                  phoneFocused && styles.fieldIconBoxActive,
+                  emailFocused && styles.fieldIconBoxActive,
                 ]}
               >
-                <Phone size={16} color={phoneFocused ? "#10B981" : "#9CA3AF"} />
+                <Mail size={16} color={emailFocused ? "#10B981" : "#9CA3AF"} />
               </View>
               <TextInput
                 style={styles.fieldInput}
-                placeholder="Số điện thoại"
+                placeholder="Email"
                 placeholderTextColor="#C0C9D4"
-                keyboardType="phone-pad"
-                value={phone}
-                onChangeText={setPhone}
-                maxLength={11}
-                onFocus={() => setPhoneFocused(true)}
-                onBlur={() => setPhoneFocused(false)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
               />
             </MotiView>
 
@@ -285,7 +293,6 @@ export default function ParentAuth() {
                 activeOpacity={0.88}
                 disabled={isLoading}
               >
-                {/* Shimmer stripe */}
                 <View style={styles.btnShimmer} />
                 <Text style={styles.loginBtnText}>
                   {isLoading ? "Đang xác thực..." : "Đăng nhập"}
@@ -300,19 +307,12 @@ export default function ParentAuth() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Social-style hint */}
             <TouchableOpacity style={styles.registerBtn} activeOpacity={0.7}>
               <Text style={styles.registerText}>
                 Chưa có tài khoản?{" "}
                 <Text style={styles.registerBold}>Liên hệ nhà trường</Text>
               </Text>
             </TouchableOpacity>
-
-            {/* Demo hint */}
-            <View style={styles.demoBox}>
-              <Text style={styles.demoLabel}>🔑 Demo</Text>
-              <Text style={styles.demoVal}>0901234567 · 123</Text>
-            </View>
           </MotiView>
         </ScrollView>
       </View>
@@ -320,14 +320,10 @@ export default function ParentAuth() {
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#064E3B",
-  },
+  screen: { flex: 1, backgroundColor: "#064E3B" },
 
-  // Background
   heroBg: {
     position: "absolute",
     top: 0,
@@ -336,18 +332,7 @@ const styles = StyleSheet.create({
     height: height * 0.52,
     backgroundColor: "#064E3B",
   },
-  heroOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: height * 0.52,
-    backgroundColor: "transparent",
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
 
-  // Toast
   toastWrapper: {
     position: "absolute",
     top: 56,
@@ -371,34 +356,18 @@ const styles = StyleSheet.create({
   },
   toastSuccess: { backgroundColor: "#059669" },
   toastError: { backgroundColor: "#DC2626" },
-  toastIcon: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#fff",
-  },
-  toastText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  toastIcon: { fontSize: 14, fontWeight: "800", color: "#fff" },
+  toastText: { color: "#fff", fontSize: 14, fontWeight: "600" },
 
-  // Scroll
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "flex-end",
-  },
+  scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
 
-  // Hero
   heroSection: {
     alignItems: "center",
     paddingTop: 20,
     paddingBottom: 40,
     gap: 20,
   },
-  logoMark: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  logoMark: { alignItems: "center", justifyContent: "center" },
   logoLeafOuter: {
     width: 88,
     height: 88,
@@ -422,9 +391,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
-  logoEmoji: {
-    fontSize: 30,
-  },
+  logoEmoji: { fontSize: 30 },
   brandName: {
     fontSize: 36,
     fontWeight: "800",
@@ -437,11 +404,9 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.6)",
     textAlign: "center",
     marginTop: 4,
-    fontWeight: "400",
     letterSpacing: 0.2,
   },
 
-  // Panel
   panel: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 32,
@@ -469,14 +434,8 @@ const styles = StyleSheet.create({
     color: "#064E3B",
     letterSpacing: -0.5,
   },
-  panelSub: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop: 4,
-    marginBottom: 28,
-  },
+  panelSub: { fontSize: 13, color: "#6B7280", marginTop: 4, marginBottom: 28 },
 
-  // Fields
   fieldWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -502,29 +461,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#ECFDF5",
     borderRightColor: "#10B981",
   },
-  fieldInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#111827",
-    paddingVertical: 14,
-  },
-  eyeBtn: {
-    paddingLeft: 8,
-  },
+  fieldInput: { flex: 1, fontSize: 15, color: "#111827", paddingVertical: 14 },
+  eyeBtn: { paddingLeft: 8 },
 
-  // Forgot
-  forgotRow: {
-    alignSelf: "flex-end",
-    marginBottom: 24,
-    marginTop: 2,
-  },
-  forgotText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#10B981",
-  },
+  forgotRow: { alignSelf: "flex-end", marginBottom: 24, marginTop: 2 },
+  forgotText: { fontSize: 13, fontWeight: "600", color: "#10B981" },
 
-  // Login button
   loginBtn: {
     height: 56,
     borderRadius: 16,
@@ -555,7 +497,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
 
-  // Divider
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -563,32 +504,13 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 16,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#E5E7EB",
-  },
-  dividerText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    fontWeight: "500",
-  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#E5E7EB" },
+  dividerText: { fontSize: 12, color: "#9CA3AF", fontWeight: "500" },
 
-  // Register
-  registerBtn: {
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  registerText: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  registerBold: {
-    color: "#059669",
-    fontWeight: "700",
-  },
+  registerBtn: { alignItems: "center", paddingVertical: 4 },
+  registerText: { fontSize: 13, color: "#6B7280" },
+  registerBold: { color: "#059669", fontWeight: "700" },
 
-  // Demo
   demoBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -602,10 +524,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#D1FAE5",
   },
-  demoLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
+  demoLabel: { fontSize: 12, color: "#6B7280" },
   demoVal: {
     fontSize: 12,
     fontWeight: "700",

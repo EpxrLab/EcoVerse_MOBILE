@@ -22,42 +22,7 @@ import {
   ChevronRight,
   Star,
 } from "lucide-react-native";
-
-// ─── Mock API ─────────────────────────────────────────────────────────────────
-const fetchParentProfile = () =>
-  new Promise((resolve) =>
-    setTimeout(
-      () =>
-        resolve({
-          data: {
-            id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            fullName: "Nguyễn Văn Phụ Huynh",
-            phoneNumber: "0901234567",
-            email: "nguyenvanph@gmail.com",
-            isFirstLogin: false,
-            children: [
-              {
-                id: "c1a2b3c4-1234-5678-abcd-ef0123456789",
-                studentCode: "HS2024001",
-                fullName: "Nguyễn Minh Anh",
-                className: "4A",
-                gradeLevel: "Lớp 4",
-                schoolName: "Tiểu học Lê Văn Tám",
-              },
-              {
-                id: "d2e3f4a5-2345-6789-bcde-f01234567890",
-                studentCode: "HS2024002",
-                fullName: "Nguyễn Gia Bảo",
-                className: "2B",
-                gradeLevel: "Lớp 2",
-                schoolName: "Tiểu học Lê Văn Tám",
-              },
-            ],
-          },
-        }),
-      800,
-    ),
-  );
+import { getAuthenticatedParent } from "../services";
 
 // ─── Info Row ─────────────────────────────────────────────────────────────────
 function InfoRow({ icon: Icon, iconColor, label, value, delay }) {
@@ -130,11 +95,18 @@ export default function ParentProfile() {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchParentProfile().then((res) => {
+  const fetchParentProfile = async () => {
+    try {
+      const res = await getAuthenticatedParent();
       setProfile(res.data);
       setIsLoading(false);
-    });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchParentProfile();
   }, []);
 
   return (
@@ -160,14 +132,14 @@ export default function ParentProfile() {
             {/* Avatar */}
             <View style={styles.heroAvatar}>
               <Text style={styles.heroAvatarInitial}>
-                {profile.fullName.charAt(0)}
+                {profile?.fullName?.charAt(0)}
               </Text>
             </View>
 
             <View style={styles.heroInfo}>
-              <Text style={styles.heroName}>{profile.fullName}</Text>
-              <Text style={styles.heroPhone}>{profile.phoneNumber}</Text>
-              {profile.isFirstLogin && (
+              <Text style={styles.heroName}>{profile?.fullName}</Text>
+              <Text style={styles.heroPhone}>{profile?.phoneNumber}</Text>
+              {profile?.isFirstLogin && (
                 <View style={styles.firstLoginBadge}>
                   <Star size={10} color="#FCD34D" />
                   <Text style={styles.firstLoginText}>Đăng nhập lần đầu</Text>
@@ -201,7 +173,7 @@ export default function ParentProfile() {
                 icon={User}
                 iconColor="#059669"
                 label="Họ và tên"
-                value={profile.fullName}
+                value={profile?.fullName}
                 delay={180}
               />
               <View style={styles.divider} />
@@ -209,7 +181,7 @@ export default function ParentProfile() {
                 icon={Phone}
                 iconColor="#2563EB"
                 label="Số điện thoại"
-                value={profile.phoneNumber}
+                value={profile?.phoneNumber}
                 delay={230}
               />
               <View style={styles.divider} />
@@ -217,7 +189,7 @@ export default function ParentProfile() {
                 icon={Mail}
                 iconColor="#7C3AED"
                 label="Email"
-                value={profile.email}
+                value={profile?.email}
                 delay={280}
               />
             </View>
@@ -235,7 +207,7 @@ export default function ParentProfile() {
                 icon={Hash}
                 iconColor="#EA580C"
                 label="Mã tài khoản"
-                value={profile.id.slice(0, 8).toUpperCase() + "..."}
+                value={profile?.id?.slice(0, 8)?.toUpperCase() + "..."}
                 delay={320}
               />
               <View style={styles.divider} />
@@ -250,10 +222,10 @@ export default function ParentProfile() {
                   <Text
                     style={[
                       styles.infoValue,
-                      { color: profile.isFirstLogin ? "#D97706" : "#059669" },
+                      { color: profile?.isFirstLogin ? "#D97706" : "#059669" },
                     ]}
                   >
-                    {profile.isFirstLogin
+                    {profile?.isFirstLogin
                       ? "Chưa hoàn thiện hồ sơ"
                       : "Hoạt động"}
                   </Text>
@@ -272,12 +244,12 @@ export default function ParentProfile() {
               <Text style={styles.sectionLabel}>CON CỦA TÔI</Text>
               <View style={styles.childCountBadge}>
                 <Text style={styles.childCountText}>
-                  {profile.children.length}
+                  {profile?.children?.length}
                 </Text>
               </View>
             </View>
 
-            {profile.children.length === 0 ? (
+            {profile?.children?.length === 0 ? (
               <View style={styles.emptyChildren}>
                 <BookOpen size={28} color="#D1D5DB" />
                 <Text style={styles.emptyChildrenText}>
@@ -286,7 +258,7 @@ export default function ParentProfile() {
               </View>
             ) : (
               <View style={styles.childList}>
-                {profile.children.map((child, idx) => (
+                {profile?.children?.map((child, idx) => (
                   <ChildProfileCard key={child.id} child={child} index={idx} />
                 ))}
               </View>
