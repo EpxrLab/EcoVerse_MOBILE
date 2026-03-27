@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,173 +8,154 @@ import {
   Modal,
   Dimensions,
   Pressable,
+  TextInput,
+  Alert,
 } from "react-native";
 import { MotiView } from "moti";
 import {
   Flag,
   Calendar,
-  Coins,
   CheckCircle2,
   XCircle,
   Clock,
-  School,
   User,
-  Gamepad2,
-  Gift,
+  AlertTriangle,
+  Filter,
+  Info,
 } from "lucide-react-native";
 import { MobileHeader } from "../components/MobileHeader";
+import DropDownPicker from "react-native-dropdown-picker";
+import {
+  approveInvitation,
+  getAllCamapaignInvitations,
+  rejectInvitation,
+} from "../services";
+import Toast from "react-native-toast-message";
 
-const { height } = Dimensions.get("window");
+const { height, width } = Dimensions.get("window");
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
 const MOCK_INVITATIONS = [
   {
-    id: "1",
-    campaign_name: "Tái chế Nhựa Tháng 3",
-    child_name: "Nguyễn Minh Anh",
-    class_name: "4A",
-    school_name: "Tiểu học Lê Văn Tám",
-    start_date: "2026-03-01",
-    end_date: "2026-03-31",
-    reward_coins: 200,
-    campaign_description:
-      "Chiến dịch giúp học sinh hiểu về tác hại của rác thải nhựa và cách phân loại, tái chế đúng cách để bảo vệ môi trường sống.",
-    status: "pending",
+    campaignId: "c1a2b3c4-0001",
+    campaignName: "Tái chế Nhựa Tháng 3",
+    studentId: "s1",
+    studentName: "Nguyễn Minh Anh",
+    parentApprovalStatus: "INVITED",
+    invitationDeadline: "2026-04-05T23:59:00.000Z",
   },
   {
-    id: "2",
-    campaign_name: "Chiến dịch Xanh Mùa Hè",
-    child_name: "Nguyễn Gia Bảo",
-    class_name: "2B",
-    school_name: "Tiểu học Lê Văn Tám",
-    start_date: "2026-06-01",
-    end_date: "2026-06-30",
-    reward_coins: 150,
-    campaign_description:
-      "Trồng cây xanh và bảo vệ nguồn nước sạch trong cộng đồng.",
-    status: "pending",
+    campaignId: "c1a2b3c4-0002",
+    campaignName: "Chiến dịch Xanh Mùa Hè",
+    studentId: "s2",
+    studentName: "Nguyễn Gia Bảo",
+    parentApprovalStatus: "INVITED",
+    invitationDeadline: "2026-04-10T23:59:00.000Z",
   },
   {
-    id: "3",
-    campaign_name: "Tiết kiệm Năng lượng",
-    child_name: "Nguyễn Minh Anh",
-    class_name: "4A",
-    school_name: "Tiểu học Lê Văn Tám",
-    start_date: "2026-01-10",
-    end_date: "2026-01-31",
-    reward_coins: 180,
-    campaign_description:
-      "Học cách sử dụng điện và nước tiết kiệm, thông minh hơn.",
-    status: "accepted",
+    campaignId: "c1a2b3c4-0003",
+    campaignName: "Tiết kiệm Năng lượng",
+    studentId: "s1",
+    studentName: "Nguyễn Minh Anh",
+    parentApprovalStatus: "APPROVED",
+    invitationDeadline: "2026-03-15T23:59:00.000Z",
   },
   {
-    id: "4",
-    campaign_name: "Không Túi Nilon",
-    child_name: "Nguyễn Gia Bảo",
-    class_name: "2B",
-    school_name: "Tiểu học Lê Văn Tám",
-    start_date: "2025-12-01",
-    end_date: "2025-12-31",
-    reward_coins: 120,
-    campaign_description: "Thay thế túi nilon bằng túi vải tái sử dụng.",
-    status: "rejected",
+    campaignId: "c1a2b3c4-0004",
+    campaignName: "Không Túi Nilon",
+    studentId: "s2",
+    studentName: "Nguyễn Gia Bảo",
+    parentApprovalStatus: "REJECTED",
+    invitationDeadline: "2026-03-10T23:59:00.000Z",
   },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const formatDate = (dateStr) => {
-  const d = new Date(dateStr);
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatDeadline = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-const formatDateShort = (dateStr) => {
-  const d = new Date(dateStr);
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+const isExpiringSoon = (iso) => {
+  if (!iso) return false;
+  const diff = new Date(iso) - new Date();
+  return diff > 0 && diff < 1000 * 60 * 60 * 48; // < 48h
 };
 
-const getStatusStyle = (status) => {
-  switch (status) {
-    case "pending":
-      return {
-        bg: "#FFF7ED",
-        text: "#EA580C",
-        label: "Chờ xác nhận",
-        Icon: Clock,
-      };
-    case "accepted":
-      return {
-        bg: "#F0FDF4",
-        text: "#16A34A",
-        label: "Đã đồng ý",
-        Icon: CheckCircle2,
-      };
-    case "rejected":
-      return {
-        bg: "#FEF2F2",
-        text: "#DC2626",
-        label: "Đã từ chối",
-        Icon: XCircle,
-      };
-    default:
-      return { bg: "#F3F4F6", text: "#6B7280", label: status, Icon: Clock };
-  }
+const STATUS_CONFIG = {
+  INVITED: {
+    label: "Chờ xác nhận",
+    color: "#EA580C",
+    bg: "#FFF7ED",
+    icon: Clock,
+  },
+  APPROVED: {
+    label: "Đã đồng ý",
+    color: "#16A34A",
+    bg: "#F0FDF4",
+    icon: CheckCircle2,
+  },
+  REJECTED: {
+    label: "Đã từ chối",
+    color: "#DC2626",
+    bg: "#FEF2F2",
+    icon: XCircle,
+  },
 };
 
 // ─── Invitation Card ──────────────────────────────────────────────────────────
-function InvitationCard({ invitation, onPress, onAccept, onReject }) {
-  const s = getStatusStyle(invitation.status);
-  const StatusIcon = s.Icon;
+function InvitationCard({ item, onPress, onAccept, onRejectPress }) {
+  const cfg = STATUS_CONFIG[item.parentApprovalStatus] || STATUS_CONFIG.INVITED;
+  const StatusIcon = cfg.icon;
+  const expiring = isExpiringSoon(item.invitationDeadline);
 
   return (
     <TouchableOpacity
-      onPress={() => onPress(invitation)}
+      onPress={() => onPress(item)}
       activeOpacity={0.85}
       style={styles.card}
     >
       <View style={styles.cardRow}>
-        {/* Icon box */}
+        {/* Left icon */}
         <View style={styles.flagBox}>
-          <Flag size={22} color="#059669" />
+          <Flag size={20} color="#059669" />
         </View>
 
         <View style={styles.cardBody}>
-          {/* Title + badge */}
+          {/* Title + status badge */}
           <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle} numberOfLines={1}>
-              {invitation.campaign_name}
+              {item.campaignName}
             </Text>
-            <View style={[styles.badge, { backgroundColor: s.bg }]}>
-              <StatusIcon size={11} color={s.text} />
-              <Text style={[styles.badgeText, { color: s.text }]}>
-                {s.label}
+            <View style={[styles.badge, { backgroundColor: cfg.bg }]}>
+              <StatusIcon size={10} color={cfg.color} />
+              <Text style={[styles.badgeText, { color: cfg.color }]}>
+                {cfg.label}
               </Text>
             </View>
           </View>
 
-          {/* Meta */}
+          {/* Student */}
           <View style={styles.metaRow}>
             <User size={12} color="#9CA3AF" />
-            <Text style={styles.metaText}>
-              {invitation.child_name} - Lớp {invitation.class_name}
-            </Text>
+            <Text style={styles.metaText}>{item.studentName}</Text>
           </View>
+
+          {/* Deadline */}
           <View style={styles.metaRow}>
-            <Calendar size={12} color="#9CA3AF" />
-            <Text style={styles.metaText}>
-              {formatDateShort(invitation.start_date)} -{" "}
-              {formatDate(invitation.end_date)}
+            <Calendar size={12} color={expiring ? "#EF4444" : "#9CA3AF"} />
+            <Text style={[styles.metaText, expiring && styles.metaTextUrgent]}>
+              Hạn xác nhận: {formatDeadline(item.invitationDeadline)}
+              {expiring ? "  ⚠ Sắp hết hạn!" : ""}
             </Text>
           </View>
 
-          {/* Action buttons for pending */}
-          {invitation.status === "pending" && (
+          {/* Action buttons — only for INVITED */}
+          {item.parentApprovalStatus === "INVITED" && (
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.acceptBtn}
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  onAccept(invitation);
-                }}
+                onPress={() => onAccept(item)}
                 activeOpacity={0.8}
               >
                 <CheckCircle2 size={13} color="#fff" />
@@ -182,10 +163,7 @@ function InvitationCard({ invitation, onPress, onAccept, onReject }) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.rejectBtn}
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  onReject(invitation);
-                }}
+                onPress={() => onRejectPress(item)}
                 activeOpacity={0.8}
               >
                 <XCircle size={13} color="#6B7280" />
@@ -199,11 +177,119 @@ function InvitationCard({ invitation, onPress, onAccept, onReject }) {
   );
 }
 
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
-function DetailModal({ invitation, visible, onClose, onAccept, onReject }) {
+// ─── Reject Reason Modal ──────────────────────────────────────────────────────
+function RejectReasonModal({ invitation, visible, onClose, onConfirm }) {
+  const [reason, setReason] = useState("");
+
+  const handleConfirm = () => {
+    if (!reason.trim()) {
+      Alert.alert(
+        "Thiếu lý do",
+        "Vui lòng nhập lý do từ chối trước khi xác nhận.",
+      );
+      return;
+    }
+    onConfirm(invitation, reason.trim());
+    setReason("");
+  };
+
+  const handleClose = () => {
+    setReason("");
+    onClose();
+  };
+
   if (!invitation) return null;
-  const s = getStatusStyle(invitation.status);
-  const StatusIcon = s.Icon;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={handleClose}
+    >
+      <Pressable style={styles.backdrop} onPress={handleClose} />
+      <View style={styles.rejectSheet}>
+        <View style={styles.sheetHandle} />
+
+        {/* Header */}
+        <View style={styles.rejectHeader}>
+          <View style={styles.rejectIconBox}>
+            <XCircle size={22} color="#DC2626" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rejectTitle}>Từ chối lời mời</Text>
+            <Text style={styles.rejectSub} numberOfLines={1}>
+              {invitation.campaignName}
+            </Text>
+          </View>
+        </View>
+
+        {/* Warning banner */}
+        <View style={styles.warningBanner}>
+          <AlertTriangle size={16} color="#D97706" />
+          <Text style={styles.warningText}>
+            Lưu ý: Sau khi từ chối, thao tác này{" "}
+            <Text style={styles.warningBold}>không thể hoàn tác</Text>. Con bạn
+            sẽ không thể tham gia chiến dịch này.
+          </Text>
+        </View>
+
+        {/* Reason input */}
+        <Text style={styles.reasonLabel}>
+          Lý do từ chối <Text style={{ color: "#EF4444" }}>*</Text>
+        </Text>
+        <TextInput
+          style={styles.reasonInput}
+          placeholder="Nhập lý do từ chối chiến dịch này..."
+          placeholderTextColor="#C0C9D4"
+          multiline
+          numberOfLines={4}
+          value={reason}
+          onChangeText={setReason}
+          maxLength={300}
+          textAlignVertical="top"
+        />
+        <Text style={styles.charCount}>{reason.length}/300</Text>
+
+        {/* Buttons */}
+        <View style={styles.rejectFooter}>
+          <TouchableOpacity
+            style={styles.cancelSheetBtn}
+            onPress={handleClose}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.cancelSheetText}>Hủy bỏ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.confirmRejectBtn,
+              !reason.trim() && styles.confirmRejectBtnDisabled,
+            ]}
+            onPress={handleConfirm}
+            activeOpacity={0.85}
+          >
+            <XCircle size={15} color="#fff" />
+            <Text style={styles.confirmRejectText}>Xác nhận từ chối</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+function DetailModal({
+  invitation,
+  visible,
+  onClose,
+  onAccept,
+  onRejectPress,
+}) {
+  if (!invitation) return null;
+  const cfg =
+    STATUS_CONFIG[invitation.parentApprovalStatus] || STATUS_CONFIG.INVITED;
+  const StatusIcon = cfg.icon;
+  const expiring = isExpiringSoon(invitation.invitationDeadline);
 
   return (
     <Modal
@@ -212,99 +298,88 @@ function DetailModal({ invitation, visible, onClose, onAccept, onReject }) {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.modalBackdrop} onPress={onClose} />
-      <View style={styles.modalSheet}>
-        {/* Handle */}
+      <Pressable style={styles.backdrop} onPress={onClose} />
+      <View style={styles.detailSheet}>
         <View style={styles.sheetHandle} />
-
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
+          {/* Campaign name */}
+          <View style={styles.detailHeaderRow}>
             <View style={styles.flagBox}>
-              <Flag size={22} color="#059669" />
+              <Flag size={20} color="#059669" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.modalTitle}>{invitation.campaign_name}</Text>
-              <Text style={styles.modalSub}>
-                Lời mời tham gia cho {invitation.child_name}
-              </Text>
-            </View>
-          </View>
-
-          {/* Info rows */}
-          <View style={styles.infoBlock}>
-            <View style={styles.infoRow}>
-              <School size={15} color="#9CA3AF" />
-              <Text style={styles.infoText}>{invitation.school_name}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Calendar size={15} color="#9CA3AF" />
-              <Text style={styles.infoText}>
-                {formatDate(invitation.start_date)} -{" "}
-                {formatDate(invitation.end_date)}
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Coins size={15} color="#D97706" />
-              <Text
+              <Text style={styles.detailTitle}>{invitation.campaignName}</Text>
+              <View
                 style={[
-                  styles.infoText,
-                  { color: "#D97706", fontWeight: "700" },
+                  styles.badge,
+                  {
+                    backgroundColor: cfg.bg,
+                    alignSelf: "flex-start",
+                    marginTop: 4,
+                  },
                 ]}
               >
-                Phần thưởng: {invitation.reward_coins.toLocaleString("vi-VN")}{" "}
-                xu
+                <StatusIcon size={11} color={cfg.color} />
+                <Text style={[styles.badgeText, { color: cfg.color }]}>
+                  {cfg.label}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Info block */}
+          <View style={styles.detailInfoBlock}>
+            <View style={styles.detailInfoRow}>
+              <User size={15} color="#6B7280" />
+              <Text style={styles.detailInfoLabel}>Học sinh:</Text>
+              <Text style={styles.detailInfoVal}>{invitation.studentName}</Text>
+            </View>
+            <View style={styles.detailInfoRow}>
+              <Calendar size={15} color={expiring ? "#EF4444" : "#6B7280"} />
+              <Text style={styles.detailInfoLabel}>Hạn xác nhận:</Text>
+              <Text
+                style={[
+                  styles.detailInfoVal,
+                  expiring && { color: "#EF4444", fontWeight: "700" },
+                ]}
+              >
+                {formatDeadline(invitation.invitationDeadline)}
+                {expiring ? " ⚠" : ""}
               </Text>
             </View>
           </View>
 
-          {/* Description */}
-          {invitation.campaign_description && (
-            <View style={styles.descBox}>
-              <Text style={styles.descText}>
-                {invitation.campaign_description}
+          {/* Expiring warning */}
+          {expiring && (
+            <View style={styles.warningBanner}>
+              <AlertTriangle size={14} color="#D97706" />
+              <Text style={styles.warningText}>
+                Lời mời sắp hết hạn, hãy xác nhận sớm!
               </Text>
             </View>
           )}
 
-          {/* Child card */}
-          <View style={styles.childCard}>
-            <View style={styles.childAvatar}>
-              <User size={18} color="#2563EB" />
-            </View>
-            <View>
-              <Text style={styles.childName}>{invitation.child_name}</Text>
-              <Text style={styles.childClass}>Lớp {invitation.class_name}</Text>
-            </View>
+          {/* Info note */}
+          <View style={styles.infoNote}>
+            <Info size={14} color="#2563EB" />
+            <Text style={styles.infoNoteText}>
+              Liên hệ nhà trường để biết thêm chi tiết về chiến dịch này.
+            </Text>
           </View>
 
-          {/* Benefits grid */}
-          <Text style={styles.benefitsTitle}>Khi tham gia, con sẽ được:</Text>
-          <View style={styles.benefitsGrid}>
-            {[
-              {
-                icon: Gamepad2,
-                color: "#059669",
-                label: "Chơi game môi trường",
-              },
-              { icon: Coins, color: "#D97706", label: "Kiếm xu thưởng" },
-              { icon: Gift, color: "#7C3AED", label: "Đổi quà hấp dẫn" },
-              { icon: Flag, color: "#2563EB", label: "Bảo vệ môi trường" },
-            ].map(({ icon: Icon, color, label }) => (
-              <View key={label} style={styles.benefitChip}>
-                <Icon size={15} color={color} />
-                <Text style={styles.benefitText}>{label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Footer actions */}
-          <View style={styles.modalFooter}>
-            {invitation.status === "pending" ? (
+          {/* Footer */}
+          <View style={styles.detailFooter}>
+            {invitation.parentApprovalStatus === "INVITED" ? (
               <View style={styles.footerBtns}>
                 <TouchableOpacity
                   style={styles.modalRejectBtn}
-                  onPress={() => onReject(invitation)}
+                  onPress={() => {
+                    onClose();
+                    setTimeout(() => onRejectPress(invitation), 300);
+                  }}
                   activeOpacity={0.8}
                 >
                   <XCircle size={16} color="#6B7280" />
@@ -320,10 +395,10 @@ function DetailModal({ invitation, visible, onClose, onAccept, onReject }) {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={[styles.statusFull, { backgroundColor: s.bg }]}>
-                <StatusIcon size={16} color={s.text} />
-                <Text style={[styles.statusFullText, { color: s.text }]}>
-                  {s.label}
+              <View style={[styles.statusFull, { backgroundColor: cfg.bg }]}>
+                <StatusIcon size={16} color={cfg.color} />
+                <Text style={[styles.statusFullText, { color: cfg.color }]}>
+                  {cfg.label}
                 </Text>
               </View>
             )}
@@ -334,40 +409,114 @@ function DetailModal({ invitation, visible, onClose, onAccept, onReject }) {
   );
 }
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ParentCampaigns() {
-  const [invitations, setInvitations] = useState(MOCK_INVITATIONS);
+  const [invitations, setInvitations] = useState([]);
   const [activeTab, setActiveTab] = useState("pending");
-  const [selectedInvitation, setSelectedInvitation] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectVisible, setRejectVisible] = useState(false);
 
-  const pendingList = invitations.filter((i) => i.status === "pending");
-  const respondedList = invitations.filter((i) => i.status !== "pending");
+  const [dropOpen, setDropOpen] = useState(false);
+  const [dropValue, setDropValue] = useState("ALL");
+  const dropItems = [
+    { label: "Tất cả", value: "ALL" },
+    { label: "Đã đồng ý", value: "APPROVED" },
+    { label: "Đã từ chối", value: "REJECTED" },
+  ];
 
-  const handleAccept = (invitation) => {
-    setInvitations((prev) =>
-      prev.map((i) =>
-        i.id === invitation.id ? { ...i, status: "accepted" } : i,
-      ),
-    );
-    setIsModalOpen(false);
+  const fetchData = async () => {
+    try {
+      const res = await getAllCamapaignInvitations();
+      setInvitations(res.data);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const handleReject = (invitation) => {
-    setInvitations((prev) =>
-      prev.map((i) =>
-        i.id === invitation.id ? { ...i, status: "rejected" } : i,
-      ),
-    );
-    setIsModalOpen(false);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const pendingList = invitations.filter(
+    (i) => i.parentApprovalStatus === "INVITED",
+  );
+  const respondedList = invitations.filter(
+    (i) => i.parentApprovalStatus !== "INVITED",
+  );
+  const filteredResponded =
+    dropValue === "ALL"
+      ? respondedList
+      : respondedList.filter((i) => i.parentApprovalStatus === dropValue);
+
+  const currentList = activeTab === "pending" ? pendingList : filteredResponded;
+
+  const handleAccept = async (item) => {
+    try {
+      const payload = {
+        studentId: item.studentId,
+      };
+      const res = await approveInvitation(item.id, payload);
+
+      if (res) {
+        Toast.show({
+          type: "success",
+          text1: "Xác nhận tham gia thành công!",
+          text2: "Bạn đã xác nhận học sinh sẽ tham gia chiến dịch.",
+        });
+        fetchData();
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Xác nhận tham gia thất bại!",
+          text2:
+            "Thao tác xác nhận học sinh sẽ tham gia chiến dịch chưa được ghi nhận.",
+        });
+      }
+      setDetailVisible(false);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const handleViewDetail = (invitation) => {
-    setSelectedInvitation(invitation);
-    setIsModalOpen(true);
+  const handleRejectPress = (item) => {
+    setRejectTarget(item);
+    setRejectVisible(true);
   };
 
-  const currentList = activeTab === "pending" ? pendingList : respondedList;
+  const handleRejectConfirm = async (item, reason) => {
+    try {
+      const payload = {
+        studentId: item.studentId,
+        reason: reason,
+      };
+      const res = await rejectInvitation(item.id, payload);
+      if (res) {
+        Toast.show({
+          type: "success",
+          text1: "Từ chối tham gia thành công!",
+          text2: "Bạn đã từ chối cho học sinh tham gia chiến dịch.",
+        });
+        fetchData();
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Từ chối tham gia thất bại!",
+          text2: "Thao tác từ chối tham gia chiến dịch của bạn chưa được ghi nhận.",
+        });
+      }
+      setRejectVisible(false);
+      setRejectTarget(null);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleViewDetail = (item) => {
+    setSelected(item);
+    setDetailVisible(true);
+  };
 
   return (
     <View style={styles.screen}>
@@ -377,6 +526,7 @@ export default function ParentCampaigns() {
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Hero banner */}
         <MotiView
@@ -386,7 +536,7 @@ export default function ParentCampaigns() {
           style={styles.heroBanner}
         >
           <View style={styles.heroIcon}>
-            <Flag size={24} color="#059669" />
+            <Flag size={22} color="#059669" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.heroTitle}>Lời mời chiến dịch</Text>
@@ -394,86 +544,145 @@ export default function ParentCampaigns() {
               Xác nhận cho con tham gia các chiến dịch môi trường
             </Text>
           </View>
+          {pendingList.length > 0 && (
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>{pendingList.length} mới</Text>
+            </View>
+          )}
         </MotiView>
 
         {/* Tab bar */}
         <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "pending" && styles.tabActive]}
-            onPress={() => setActiveTab("pending")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "pending" && styles.tabTextActive,
-              ]}
+          {[
+            {
+              key: "pending",
+              label: "Chờ xác nhận",
+              count: pendingList.length,
+            },
+            {
+              key: "responded",
+              label: "Đã phản hồi",
+              count: respondedList.length,
+            },
+          ].map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+              activeOpacity={0.8}
             >
-              Chờ xác nhận
-            </Text>
-            {pendingList.length > 0 && (
-              <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{pendingList.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "responded" && styles.tabActive]}
-            onPress={() => setActiveTab("responded")}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "responded" && styles.tabTextActive,
-              ]}
-            >
-              Đã phản hồi
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === tab.key && styles.tabTextActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+              {tab.count > 0 && (
+                <View
+                  style={[
+                    styles.tabBadge,
+                    {
+                      backgroundColor:
+                        activeTab === tab.key ? "#F97316" : "#E5E7EB",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tabBadgeText,
+                      { color: activeTab === tab.key ? "#fff" : "#9CA3AF" },
+                    ]}
+                  >
+                    {tab.count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
         </View>
+
+        {/* Dropdown filter — only on responded tab */}
+        {activeTab === "responded" && (
+          <MotiView
+            from={{ opacity: 0, translateY: -4 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 220 }}
+            style={{ zIndex: 500 }}
+          >
+            <View style={styles.filterLabelRow}>
+              <Filter size={13} color="#6B7280" />
+              <Text style={styles.filterLabel}>Lọc theo kết quả phản hồi</Text>
+              <Text style={styles.filterCount}>
+                {filteredResponded.length} kết quả
+              </Text>
+            </View>
+            <DropDownPicker
+              open={dropOpen}
+              value={dropValue}
+              items={dropItems}
+              setOpen={setDropOpen}
+              setValue={setDropValue}
+              style={styles.picker}
+              dropDownContainerStyle={styles.pickerDropdown}
+              textStyle={styles.pickerText}
+              selectedItemLabelStyle={{ fontWeight: "700", color: "#059669" }}
+              ArrowUpIconComponent={() => (
+                <Text style={styles.pickerArrow}>▲</Text>
+              )}
+              ArrowDownIconComponent={() => (
+                <Text style={styles.pickerArrow}>▼</Text>
+              )}
+              zIndex={500}
+              zIndexInverse={100}
+            />
+          </MotiView>
+        )}
 
         {/* List */}
         <MotiView
-          key={activeTab}
-          from={{ opacity: 0, translateX: 10 }}
+          key={activeTab + dropValue}
+          from={{ opacity: 0, translateX: 6 }}
           animate={{ opacity: 1, translateX: 0 }}
-          transition={{ type: "timing", duration: 260 }}
+          transition={{ type: "timing", duration: 240 }}
+          style={{ zIndex: 1 }}
         >
           {currentList.length === 0 ? (
             <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}>
+              <View style={styles.emptyIconBox}>
                 {activeTab === "pending" ? (
-                  <CheckCircle2 size={32} color="#10B981" />
+                  <Flag size={32} color="#A7F3D0" />
                 ) : (
-                  <Clock size={32} color="#D1D5DB" />
+                  <CheckCircle2 size={32} color="#D1D5DB" />
                 )}
               </View>
               <Text style={styles.emptyTitle}>
                 {activeTab === "pending"
-                  ? "Không có lời mời mới"
-                  : "Chưa có phản hồi nào"}
+                  ? "Không có lời mời nào"
+                  : dropValue !== "ALL"
+                    ? `Không có chiến dịch "${dropItems.find((d) => d.value === dropValue)?.label}"`
+                    : "Chưa có phản hồi nào"}
               </Text>
               <Text style={styles.emptyDesc}>
                 {activeTab === "pending"
-                  ? "Bạn đã xác nhận tất cả lời mời chiến dịch"
+                  ? "Hiện tại không có chiến dịch nào mời con bạn tham gia"
                   : "Các lời mời đã phản hồi sẽ hiển thị ở đây"}
               </Text>
             </View>
           ) : (
             currentList.map((inv, idx) => (
               <MotiView
-                key={inv.id}
-                from={{ opacity: 0, translateY: 12 }}
+                key={inv.campaignId}
+                from={{ opacity: 0, translateY: 10 }}
                 animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: "timing", duration: 300, delay: idx * 60 }}
+                transition={{ type: "timing", duration: 280, delay: idx * 55 }}
               >
                 <InvitationCard
-                  invitation={inv}
+                  item={inv}
                   onPress={handleViewDetail}
                   onAccept={handleAccept}
-                  onReject={handleReject}
+                  onRejectPress={handleRejectPress}
                 />
               </MotiView>
             ))
@@ -483,11 +692,22 @@ export default function ParentCampaigns() {
 
       {/* Detail modal */}
       <DetailModal
-        invitation={selectedInvitation}
-        visible={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        invitation={selected}
+        visible={detailVisible}
+        onClose={() => setDetailVisible(false)}
         onAccept={handleAccept}
-        onReject={handleReject}
+        onRejectPress={handleRejectPress}
+      />
+
+      {/* Reject reason modal */}
+      <RejectReasonModal
+        invitation={rejectTarget}
+        visible={rejectVisible}
+        onClose={() => {
+          setRejectVisible(false);
+          setRejectTarget(null);
+        }}
+        onConfirm={handleRejectConfirm}
       />
     </View>
   );
@@ -496,12 +716,11 @@ export default function ParentCampaigns() {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F9FAFB" },
-
   scroll: { flex: 1 },
   content: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 100,
+    paddingBottom: 120,
     gap: 12,
   },
 
@@ -517,15 +736,22 @@ const styles = StyleSheet.create({
     borderColor: "#A7F3D0",
   },
   heroIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 13,
     backgroundColor: "#D1FAE5",
     alignItems: "center",
     justifyContent: "center",
   },
   heroTitle: { fontSize: 15, fontWeight: "700", color: "#064E3B" },
   heroDesc: { fontSize: 12, color: "#6B7280", marginTop: 2 },
+  heroBadge: {
+    backgroundColor: "#F97316",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  heroBadgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
 
   // Tab bar
   tabBar: {
@@ -555,7 +781,6 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontWeight: "500", color: "#9CA3AF" },
   tabTextActive: { color: "#059669", fontWeight: "700" },
   tabBadge: {
-    backgroundColor: "#F97316",
     borderRadius: 8,
     minWidth: 18,
     height: 18,
@@ -563,14 +788,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  tabBadgeText: { color: "#fff", fontSize: 10, fontWeight: "800" },
+  tabBadgeText: { fontSize: 10, fontWeight: "800" },
 
-  // Card
+  // Filter
+  filterLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  filterLabel: { fontSize: 12, fontWeight: "600", color: "#6B7280", flex: 1 },
+  filterCount: { fontSize: 11, color: "#9CA3AF" },
+  picker: {
+    borderRadius: 12,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    minHeight: 46,
+  },
+  pickerDropdown: {
+    borderRadius: 12,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  pickerText: { fontSize: 13, color: "#111827" },
+  pickerArrow: { fontSize: 9, color: "#9CA3AF" },
+
+  // Invitation Card
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 14,
-    marginBottom: 10,
+    marginBottom: 2,
     borderWidth: 1.5,
     borderColor: "rgba(0,0,0,0.05)",
     shadowColor: "#000",
@@ -581,9 +834,9 @@ const styles = StyleSheet.create({
   },
   cardRow: { flexDirection: "row", gap: 12 },
   flagBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 13,
     backgroundColor: "#ECFDF5",
     alignItems: "center",
     justifyContent: "center",
@@ -609,6 +862,7 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 10, fontWeight: "600" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   metaText: { fontSize: 12, color: "#6B7280" },
+  metaTextUrgent: { color: "#EF4444", fontWeight: "600" },
 
   // Action buttons
   actionRow: { flexDirection: "row", gap: 8, marginTop: 8 },
@@ -619,7 +873,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 5,
     backgroundColor: "#059669",
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 10,
     shadowColor: "#059669",
     shadowOffset: { width: 0, height: 2 },
@@ -635,7 +889,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 5,
     backgroundColor: "#F3F4F6",
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -643,31 +897,40 @@ const styles = StyleSheet.create({
   rejectBtnText: { fontSize: 13, fontWeight: "600", color: "#6B7280" },
 
   // Empty state
-  emptyState: { alignItems: "center", paddingVertical: 56, gap: 10 },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  emptyState: { alignItems: "center", paddingVertical: 60, gap: 10 },
+  emptyIconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
-  emptyTitle: { fontSize: 15, fontWeight: "700", color: "#374151" },
-  emptyDesc: { fontSize: 13, color: "#9CA3AF", textAlign: "center" },
-
-  // Modal
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#374151",
+    textAlign: "center",
   },
-  modalSheet: {
+  emptyDesc: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    textAlign: "center",
+    lineHeight: 20,
+    paddingHorizontal: 20,
+  },
+
+  // Backdrop
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
+
+  // Reject reason sheet
+  rejectSheet: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
-    paddingBottom: 40,
-    maxHeight: height * 0.88,
+    paddingBottom: 36,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
@@ -683,82 +946,147 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 20,
   },
-  modalHeader: {
+  rejectHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  rejectIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#FEE2E2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rejectTitle: { fontSize: 18, fontWeight: "800", color: "#111827" },
+  rejectSub: { fontSize: 12, color: "#6B7280", marginTop: 2 },
+
+  // Warning banner
+  warningBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    marginBottom: 16,
+  },
+  warningText: { fontSize: 12, color: "#92400E", flex: 1, lineHeight: 18 },
+  warningBold: { fontWeight: "800" },
+
+  // Info note
+  infoNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    marginBottom: 16,
+  },
+  infoNoteText: { fontSize: 12, color: "#1E40AF", flex: 1, lineHeight: 18 },
+
+  // Reason input
+  reasonLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+    marginBottom: 8,
+  },
+  reasonInput: {
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 14,
+    color: "#111827",
+    backgroundColor: "#FAFAFA",
+    minHeight: 110,
+    marginBottom: 4,
+  },
+  charCount: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    textAlign: "right",
+    marginBottom: 20,
+  },
+
+  // Reject footer buttons
+  rejectFooter: { flexDirection: "row", gap: 10 },
+  cancelSheetBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  cancelSheetText: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
+  confirmRejectBtn: {
+    flex: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#DC2626",
+    shadowColor: "#DC2626",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  confirmRejectBtnDisabled: {
+    backgroundColor: "#FCA5A5",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  confirmRejectText: { fontSize: 14, fontWeight: "700", color: "#fff" },
+
+  // Detail sheet
+  detailSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    maxHeight: height * 0.75,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 16,
+  },
+  detailHeaderRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
     marginBottom: 20,
   },
-  modalTitle: {
+  detailTitle: {
     fontSize: 17,
     fontWeight: "800",
     color: "#111827",
     lineHeight: 22,
   },
-  modalSub: { fontSize: 12, color: "#6B7280", marginTop: 3 },
-
-  infoBlock: { gap: 10, marginBottom: 16 },
-  infoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  infoText: { fontSize: 13, color: "#374151" },
-
-  descBox: {
+  detailInfoBlock: {
     backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  descText: { fontSize: 13, color: "#6B7280", lineHeight: 20 },
-
-  childCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "#EFF6FF",
     borderRadius: 14,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1.5,
-    borderColor: "#BFDBFE",
+    padding: 14,
+    gap: 10,
+    marginBottom: 14,
   },
-  childAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#DBEAFE",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  childName: { fontSize: 14, fontWeight: "700", color: "#1E3A8A" },
-  childClass: { fontSize: 12, color: "#3B82F6", marginTop: 2 },
-
-  benefitsTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 10,
-  },
-  benefitsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 24,
-  },
-  benefitChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    width: "47%",
-  },
-  benefitText: { fontSize: 11, color: "#374151", flex: 1 },
-
-  // Modal footer
-  modalFooter: { paddingTop: 4 },
+  detailInfoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  detailInfoLabel: { fontSize: 13, color: "#6B7280", width: 100 },
+  detailInfoVal: { fontSize: 13, fontWeight: "600", color: "#111827", flex: 1 },
+  detailFooter: { paddingTop: 8 },
   footerBtns: { flexDirection: "row", gap: 10 },
   modalRejectBtn: {
     flex: 1,
