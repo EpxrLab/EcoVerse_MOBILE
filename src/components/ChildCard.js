@@ -1,9 +1,15 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { Coins, Target, Flame } from "lucide-react-native";
+import { Coins, Target, Flame, Cake, Calendar } from "lucide-react-native";
 import { MotiView } from "moti";
 
 export function ChildCard({ child, onSelect }) {
+  const formatDate = (dateString) => {
+    if (!dateString) return "Chưa cập nhật";
+    const [year, month, day] = dateString.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <MotiView
       from={{ opacity: 0, scale: 0.97 }}
@@ -17,32 +23,24 @@ export function ChildCard({ child, onSelect }) {
       >
         {/* Header: Avatar + Info */}
         <View style={styles.header}>
-          {/* Avatar */}
-          <View style={styles.avatarWrapper}>
-            {child.avatar_url ? (
-              <Image
-                source={{ uri: child.avatar_url }}
-                style={styles.avatarImage}
-              />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarInitial}>
-                  {child.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-          </View>
-
           {/* Name + School + Level */}
           <View style={styles.info}>
             <Text style={styles.name} numberOfLines={1}>
-              {child.name}
+              {child.studentFullName}
             </Text>
             <Text style={styles.school} numberOfLines={1}>
-              {child.class_name} • {child.school_name}
+              {child.className} • {child.school_name}
             </Text>
+
+            <View style={styles.dobContainer}>
+              <Cake size={14} color="#6B7280" />
+              <Text style={styles.dobText}>
+                Ngày sinh: {formatDate(child.dob)}
+              </Text>
+            </View>
+
             <View style={styles.badgeWrapper}>
-              <Text style={styles.badge}>Level {child.level}</Text>
+              <Text style={styles.badge}>Level {child.gradeLevel}</Text>
             </View>
           </View>
         </View>
@@ -56,27 +54,8 @@ export function ChildCard({ child, onSelect }) {
             ]}
           >
             <Coins size={20} color="#F59E0B" />
-            <Text style={styles.statValue}>{child.coins}</Text>
+            <Text style={styles.statValue}>{child.totalCoin}</Text>
             <Text style={styles.statLabel}>Xu</Text>
-          </View>
-
-          <View
-            style={[styles.statBox, { backgroundColor: "rgba(52,168,83,0.1)" }]}
-          >
-            <Target size={20} color="#34A853" />
-            <Text style={styles.statValue}>{child.accuracy}%</Text>
-            <Text style={styles.statLabel}>Chính xác</Text>
-          </View>
-
-          <View
-            style={[
-              styles.statBox,
-              { backgroundColor: "rgba(249,115,22,0.1)" },
-            ]}
-          >
-            <Flame size={20} color="#F97316" />
-            <Text style={styles.statValue}>{child.streak_days}</Text>
-            <Text style={styles.statLabel}>Ngày</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -140,6 +119,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
     marginTop: 2,
+  },
+  dobContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+  },
+  dobText: {
+    fontSize: 12,
+    color: "#6B7280",
   },
   badgeWrapper: {
     marginTop: 6,

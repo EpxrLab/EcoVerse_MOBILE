@@ -14,26 +14,17 @@ import { ActivityItem } from "../components/ActivityItem";
 
 const MOCK_CHILDREN = [
   {
-    id: "1",
-    name: "Nguyễn Minh Anh",
-    avatar_url: null,
-    class_name: "Lớp 4A",
+    studentId: "1",
+    address: "123 con cá phường Đức Nhuận tp HCM",
+    studentCode: "S001",
+    studentFullName: "Nguyễn Minh Anh",
+    className: "Lớp 4A",
+    gradeLevel: "4",
     school_name: "Tiểu học Lê Văn Tám",
     level: 5,
-    coins: 320,
-    accuracy: 87,
-    streak_days: 12,
-  },
-  {
-    id: "2",
-    name: "Nguyễn Gia Bảo",
-    avatar_url: null,
-    class_name: "Lớp 2B",
-    school_name: "Tiểu học Lê Văn Tám",
-    level: 3,
-    coins: 150,
-    accuracy: 74,
-    streak_days: 5,
+    totalCoin: 320,
+    gender: "MALE",
+    dob: "2026-03-31",
   },
 ];
 
@@ -113,7 +104,7 @@ export default function ParentHome() {
           <View style={styles.cardList}>
             {MOCK_CHILDREN.slice(0, 2).map((child) => (
               <ChildCard
-                key={child.id}
+                key={child.studentId}
                 child={child}
                 onSelect={handleSelectChild}
               />
