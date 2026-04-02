@@ -72,93 +72,11 @@ const STATUS_MAP = {
 const FILTER_STATUSES = [
   { value: "ALL", label: "Tất cả trạng thái" },
   { value: "PENDING", label: "Đang chờ xử lý" },
+  { value: "APPROVED", label: "Đã được phê duyệt" },
+  { value: "REJECTED", label: "Bị từ chối" },
   { value: "DELIVERED", label: "Đã giao (chờ xác nhận)" },
   { value: "CONFIRMED", label: "Đã nhận quà" },
-];
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_STUDENTS = [
-  {
-    studentId: "s1",
-    studentFullName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    className: "4A",
-    gender: "FEMALE",
-    dob: "15/03/2015",
-    accountStatus: "ACTIVE",
-  },
-  {
-    studentId: "s2",
-    studentFullName: "Nguyễn Gia Bảo",
-    studentCode: "HS2024002",
-    className: "2B",
-    gender: "MALE",
-    dob: "22/07/2017",
-    accountStatus: "ACTIVE",
-  },
-];
-
-const MOCK_HISTORY = [
-  {
-    id: "h1",
-    requestCode: "REQ-2026-001",
-    rewardName: "Bút chì HB",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    totalCoins: 10,
-    quantity: 2,
-    status: "PENDING",
-    createdAt: "2026-03-20T10:00:00",
-  },
-  {
-    id: "h2",
-    requestCode: "REQ-2026-002",
-    rewardName: "Voucher Tiki 50k",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Gia Bảo",
-    studentCode: "HS2024002",
-    totalCoins: 180,
-    quantity: 1,
-    status: "DELIVERED",
-    createdAt: "2026-03-18T09:30:00",
-  },
-  {
-    id: "h3",
-    requestCode: "REQ-2026-003",
-    rewardName: "Bộ màu nước sinh thái",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    totalCoins: 150,
-    quantity: 1,
-    status: "CONFIRMED",
-    createdAt: "2026-03-10T14:00:00",
-  },
-  {
-    id: "h4",
-    requestCode: "REQ-2026-004",
-    rewardName: "Vé xem phim CGV",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Gia Bảo",
-    studentCode: "HS2024002",
-    totalCoins: 200,
-    quantity: 1,
-    status: "PENDING",
-    createdAt: "2026-03-25T08:00:00",
-  },
-  {
-    id: "h5",
-    requestCode: "REQ-2026-005",
-    rewardName: "Hộp bút màu 24 cây",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    totalCoins: 80,
-    quantity: 1,
-    status: "REJECTED",
-    createdAt: "2026-03-05T11:00:00",
-  },
+  { value: "CANCELED", label: "Đã hủy" },
 ];
 
 // ─── Reward History Card ──────────────────────────────────────────────────────

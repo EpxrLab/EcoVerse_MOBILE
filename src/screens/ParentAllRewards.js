@@ -45,13 +45,6 @@ const TABS = [
     bg: "#ECFDF5",
   },
   {
-    key: "DIGITAL",
-    label: "Quà ảo",
-    icon: Sparkles,
-    color: "#7C3AED",
-    bg: "#F5F3FF",
-  },
-  {
     key: "VOUCHER",
     label: "Voucher",
     icon: Ticket,
@@ -60,7 +53,7 @@ const TABS = [
   },
 ];
 
-const TYPE_EMOJI = { PHYSICAL: "🎁", DIGITAL: "✨", VOUCHER: "🎫" };
+const TYPE_EMOJI = { PHYSICAL: "🎁", VOUCHER: "🎫" };
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 function RewardDetailModal({ reward, visible, onClose, tabColor }) {
@@ -227,8 +220,11 @@ function RewardCard({ reward, tab, onPress, delay }) {
       >
         {/* Image / emoji area */}
         <View style={[styles.cardImageBox, { backgroundColor: tab.bg }]}>
-          {reward.imageUrl ? (
-            <Image source={{ uri: reward.imageUrl }} style={styles.cardImage} />
+          {reward.imagePresignedUrl ? (
+            <Image
+              source={{ uri: reward.imagePresignedUrl }}
+              style={styles.cardImage}
+            />
           ) : (
             <Text style={styles.cardEmoji}>
               {TYPE_EMOJI[reward.rewardType]}
@@ -295,6 +291,7 @@ export function ParentAllRewards() {
       console.log(error);
     }
   };
+  console.log(rewards);
 
   useEffect(() => {
     fetchRewards();
@@ -394,17 +391,15 @@ export function ParentAllRewards() {
             style={[
               styles.banner,
               {
-                backgroundColor: currentTab.bg,
-                borderColor: currentTab.color + "30",
+                backgroundColor: currentTab?.bg,
+                borderColor: currentTab?.color + "30",
               },
             ]}
           >
-            <currentTab.icon size={18} color={currentTab.color} />
-            <Text style={[styles.bannerText, { color: currentTab.color }]}>
+            <currentTab.icon size={18} color={currentTab?.color} />
+            <Text style={[styles.bannerText, { color: currentTab?.color }]}>
               {activeTab === "PHYSICAL" &&
                 "Quà tặng hiện vật — giao tận trường cho bé"}
-              {activeTab === "DIGITAL" &&
-                "Vật phẩm trong game — kích hoạt tức thì"}
               {activeTab === "VOUCHER" &&
                 "Voucher & ưu đãi — dùng mua sắm & giải trí"}
             </Text>
