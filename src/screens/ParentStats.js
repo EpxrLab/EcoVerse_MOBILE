@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { MotiView } from "moti";
+import { FadeInView } from "../components/FadeInView";
 import { Leaf, Cloud, Trophy } from "lucide-react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { MobileHeader } from "../components/MobileHeader";
@@ -171,7 +171,7 @@ function RankBadge({ rank }) {
 // ─── Leaderboard Row ──────────────────────────────────────────────────────────
 function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, translateX: -8 }}
       animate={{ opacity: 1, translateX: 0 }}
       transition={{ type: "timing", duration: 280, delay: item.rank * 50 }}
@@ -221,7 +221,7 @@ function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
         </Text>
         <Text style={styles.accuracyLabel}>Chính xác</Text>
       </View>
-    </MotiView>
+    </FadeInView>
   );
 }
 
@@ -347,7 +347,7 @@ export default function ParentStats() {
 
         {/* ── School Tab ── */}
         {activeTab === "school" && (
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: 10 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 280 }}
@@ -418,12 +418,12 @@ export default function ParentStats() {
                 />
               ))}
             </View>
-          </MotiView>
+          </FadeInView>
         )}
 
         {/* ── Partnership Tab ── */}
         {activeTab === "partnership" && (
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: 10 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 280 }}
@@ -494,7 +494,7 @@ export default function ParentStats() {
                 />
               ))}
             </View>
-          </MotiView>
+          </FadeInView>
         )}
       </ScrollView>
     </View>

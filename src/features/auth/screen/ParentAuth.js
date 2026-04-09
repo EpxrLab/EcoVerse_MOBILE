@@ -9,11 +9,13 @@ import {
   Platform,
   Dimensions,
   ScrollView,
+  Animated,
+  Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { MotiView } from "moti";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
+import { FadeInView } from "../../../components/FadeInView";
+import { User, Lock, Eye, EyeOff } from "lucide-react-native";
 import { loginFunction } from "../services";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -21,17 +23,34 @@ const { height } = Dimensions.get("window");
 
 // ─── Floating orbs ────────────────────────────────────────────────────────────
 function FloatingOrb({ size, color, style, delay = 0 }) {
+  const transAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const animation = Animated.sequence([
+      Animated.delay(delay),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(transAnim, {
+            toValue: -18,
+            duration: 3200,
+            easing: Easing.inOut(Easing.linear),
+            useNativeDriver: true,
+          }),
+          Animated.timing(transAnim, {
+            toValue: 0,
+            duration: 3200,
+            easing: Easing.inOut(Easing.linear),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [delay]);
+
   return (
-    <MotiView
-      from={{ translateY: 0, opacity: 0.6 }}
-      animate={{ translateY: -18, opacity: 1 }}
-      transition={{
-        type: "timing",
-        duration: 3200,
-        delay,
-        loop: true,
-        repeatReverse: true,
-      }}
+    <Animated.View
       style={[
         {
           width: size,
@@ -39,6 +58,8 @@ function FloatingOrb({ size, color, style, delay = 0 }) {
           borderRadius: size / 2,
           backgroundColor: color,
           position: "absolute",
+          transform: [{ translateY: transAnim }],
+          opacity: 0.8,
         },
         style,
       ]}
@@ -49,13 +70,13 @@ function FloatingOrb({ size, color, style, delay = 0 }) {
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ message, type, visible }) {
   return (
-    <MotiView
+    <FadeInView
       animate={{
         opacity: visible ? 1 : 0,
         translateY: visible ? 0 : -20,
         scale: visible ? 1 : 0.9,
       }}
-      transition={{ type: "spring", damping: 18 }}
+      transition={{ type: "timing", duration: 300 }}
       style={[
         styles.toast,
         type === "success" ? styles.toastSuccess : styles.toastError,
@@ -64,7 +85,7 @@ function Toast({ message, type, visible }) {
     >
       <Text style={styles.toastIcon}>{type === "success" ? "✓" : "✕"}</Text>
       <Text style={styles.toastText}>{message}</Text>
-    </MotiView>
+    </FadeInView>
   );
 }
 
@@ -96,8 +117,9 @@ export default function ParentAuth() {
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      showToast("Email không hợp lệ", "error");
+    const phoneRegex = /^[0-9]{10,11}$/;
+    if (!emailRegex.test(email.trim()) && !phoneRegex.test(email.trim())) {
+      showToast("Email hoặc Số điện thoại không hợp lệ", "error");
       return;
     }
     setIsLoading(true);
@@ -172,10 +194,10 @@ export default function ParentAuth() {
         >
           {/* ── Hero ── */}
           <View style={styles.heroSection}>
-            <MotiView
+            <FadeInView
               from={{ opacity: 0, scale: 0.5, rotate: "-20deg" }}
               animate={{ opacity: 1, scale: 1, rotate: "0deg" }}
-              transition={{ type: "spring", damping: 12, delay: 100 }}
+              transition={{ type: "timing", duration: 500, delay: 100 }}
               style={styles.logoMark}
             >
               <View style={styles.logoLeafOuter}>
@@ -183,9 +205,9 @@ export default function ParentAuth() {
                   <Text style={styles.logoEmoji}>🌿</Text>
                 </View>
               </View>
-            </MotiView>
+            </FadeInView>
 
-            <MotiView
+            <FadeInView
               from={{ opacity: 0, translateY: 20 }}
               animate={{ opacity: 1, translateY: 0 }}
               transition={{ type: "timing", duration: 500, delay: 280 }}
@@ -194,14 +216,14 @@ export default function ParentAuth() {
               <Text style={styles.brandTagline}>
                 Hành trình xanh của gia đình bạn
               </Text>
-            </MotiView>
+            </FadeInView>
           </View>
 
           {/* ── Panel ── */}
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: 60 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "spring", damping: 20, delay: 400 }}
+            transition={{ type: "timing", duration: 500, delay: 400 }}
             style={styles.panel}
           >
             <View style={styles.panelHandle} />
@@ -210,7 +232,7 @@ export default function ParentAuth() {
             <Text style={styles.panelSub}>Dành cho Phụ huynh</Text>
 
             {/* Email field */}
-            <MotiView
+            <FadeInView
               animate={{ borderColor: emailFocused ? "#10B981" : "#E5E7EB" }}
               transition={{ type: "timing", duration: 180 }}
               style={styles.fieldWrap}
@@ -221,13 +243,13 @@ export default function ParentAuth() {
                   emailFocused && styles.fieldIconBoxActive,
                 ]}
               >
-                <Mail size={16} color={emailFocused ? "#10B981" : "#9CA3AF"} />
+                <User size={16} color={emailFocused ? "#10B981" : "#9CA3AF"} />
               </View>
               <TextInput
                 style={styles.fieldInput}
-                placeholder="Email"
+                placeholder="Email hoặc Số điện thoại"
                 placeholderTextColor="#C0C9D4"
-                keyboardType="email-address"
+                keyboardType="default"
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={email}
@@ -235,10 +257,10 @@ export default function ParentAuth() {
                 onFocus={() => setEmailFocused(true)}
                 onBlur={() => setEmailFocused(false)}
               />
-            </MotiView>
+            </FadeInView>
 
             {/* Password field */}
-            <MotiView
+            <FadeInView
               animate={{ borderColor: passFocused ? "#10B981" : "#E5E7EB" }}
               transition={{ type: "timing", duration: 180 }}
               style={styles.fieldWrap}
@@ -272,7 +294,7 @@ export default function ParentAuth() {
                   <Eye size={17} color="#9CA3AF" />
                 )}
               </TouchableOpacity>
-            </MotiView>
+            </FadeInView>
 
             {/* Forgot */}
             <TouchableOpacity style={styles.forgotRow} activeOpacity={0.7}>
@@ -280,7 +302,7 @@ export default function ParentAuth() {
             </TouchableOpacity>
 
             {/* Login button */}
-            <MotiView
+            <FadeInView
               animate={{
                 scale: isLoading ? 0.96 : 1,
                 opacity: isLoading ? 0.85 : 1,
@@ -298,7 +320,7 @@ export default function ParentAuth() {
                   {isLoading ? "Đang xác thực..." : "Đăng nhập"}
                 </Text>
               </TouchableOpacity>
-            </MotiView>
+            </FadeInView>
 
             {/* Divider */}
             <View style={styles.dividerRow}>
@@ -313,7 +335,7 @@ export default function ParentAuth() {
                 <Text style={styles.registerBold}>Liên hệ nhà trường</Text>
               </Text>
             </TouchableOpacity>
-          </MotiView>
+          </FadeInView>
         </ScrollView>
       </View>
     </KeyboardAvoidingView>

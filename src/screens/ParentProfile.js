@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MotiView } from "moti";
+import { FadeInView } from "../components/FadeInView";
 import {
   ArrowLeft,
   User,
@@ -27,7 +27,7 @@ import { getAuthenticatedParent } from "../services";
 // ─── Info Row ─────────────────────────────────────────────────────────────────
 function InfoRow({ icon: Icon, iconColor, label, value, delay }) {
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, translateX: -10 }}
       animate={{ opacity: 1, translateX: 0 }}
       transition={{ type: "timing", duration: 300, delay }}
@@ -40,14 +40,14 @@ function InfoRow({ icon: Icon, iconColor, label, value, delay }) {
         <Text style={styles.infoLabel}>{label}</Text>
         <Text style={styles.infoValue}>{value || "—"}</Text>
       </View>
-    </MotiView>
+    </FadeInView>
   );
 }
 
 // ─── Child Card ───────────────────────────────────────────────────────────────
 function ChildProfileCard({ child, index }) {
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, translateY: 10 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "timing", duration: 320, delay: 400 + index * 80 }}
@@ -83,7 +83,7 @@ function ChildProfileCard({ child, index }) {
           </View>
         </View>
       </View>
-    </MotiView>
+    </FadeInView>
   );
 }
 
@@ -123,10 +123,10 @@ export default function ParentProfile() {
         </TouchableOpacity>
 
         {!isLoading && profile && (
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: 12 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "spring", damping: 14, delay: 100 }}
+            transition={{ type: "timing", duration: 400, delay: 100 }}
             style={styles.heroContent}
           >
             {/* Avatar */}
@@ -146,7 +146,7 @@ export default function ParentProfile() {
                 </View>
               )}
             </View>
-          </MotiView>
+          </FadeInView>
         )}
       </View>
 
@@ -162,7 +162,7 @@ export default function ParentProfile() {
           showsVerticalScrollIndicator={false}
         >
           {/* Personal info section */}
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: 8 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 300, delay: 150 }}
@@ -193,10 +193,10 @@ export default function ParentProfile() {
                 delay={280}
               />
             </View>
-          </MotiView>
+          </FadeInView>
 
           {/* Account section */}
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: 8 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 300, delay: 300 }}
@@ -232,10 +232,10 @@ export default function ParentProfile() {
                 </View>
               </View>
             </View>
-          </MotiView>
+          </FadeInView>
 
           {/* Children section */}
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: 8 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 300, delay: 360 }}
@@ -263,10 +263,10 @@ export default function ParentProfile() {
                 ))}
               </View>
             )}
-          </MotiView>
+          </FadeInView>
 
           {/* Edit profile button */}
-          <MotiView
+          <FadeInView
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ type: "timing", duration: 300, delay: 520 }}
@@ -275,7 +275,7 @@ export default function ParentProfile() {
               <Text style={styles.editBtnText}>Chỉnh sửa thông tin</Text>
               <ChevronRight size={16} color="#059669" />
             </TouchableOpacity>
-          </MotiView>
+          </FadeInView>
         </ScrollView>
       )}
     </View>

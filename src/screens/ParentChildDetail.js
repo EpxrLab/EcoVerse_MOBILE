@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MotiView } from "moti";
+import { FadeInView } from "../components/FadeInView";
+import { Animated } from "react-native";
 import {
   ArrowLeft,
   Coins,
@@ -155,6 +156,34 @@ const getStatusInfo = (status) => {
   }
 };
 
+// ─── Progress Bar ─────────────────────────────────────────────────────────────
+function ProgressBar({ progress, delay }) {
+  const widthAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.timing(widthAnim, {
+      toValue: progress,
+      duration: 800,
+      delay,
+      useNativeDriver: false, // Cannot animate width with native driver
+    }).start();
+  }, [progress, delay]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.progressFill,
+        {
+          width: widthAnim.interpolate({
+            inputRange: [0, 100],
+            outputRange: ["0%", "100%"],
+          }),
+        },
+      ]}
+    />
+  );
+}
+
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({
   icon: Icon,
@@ -166,7 +195,7 @@ function StatCard({
   delay,
 }) {
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "spring", damping: 14, delay }}
@@ -180,15 +209,10 @@ function StatCard({
       {sub && <Text style={styles.statSub}>{sub}</Text>}
       {progress !== undefined && (
         <View style={styles.progressTrack}>
-          <MotiView
-            from={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ type: "timing", duration: 800, delay: delay + 200 }}
-            style={[styles.progressFill, { width: `${progress}%` }]}
-          />
+          <ProgressBar progress={progress} delay={delay + 200} />
         </View>
       )}
-    </MotiView>
+    </FadeInView>
   );
 }
 
@@ -343,7 +367,7 @@ export default function ParentChildDetail() {
         </View>
 
         {/* ── Reward tracking ── */}
-        <MotiView
+        <FadeInView
           from={{ opacity: 0, translateY: 12 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: "timing", duration: 350, delay: 300 }}
@@ -369,10 +393,10 @@ export default function ParentChildDetail() {
               <RewardRow key={r.id} reward={r} onConfirm={handleConfirm} />
             ))}
           </View>
-        </MotiView>
+        </FadeInView>
 
         {/* ── Recent activities ── */}
-        <MotiView
+        <FadeInView
           from={{ opacity: 0, translateY: 12 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: "timing", duration: 350, delay: 400 }}
@@ -387,7 +411,7 @@ export default function ParentChildDetail() {
               <ActivityItem key={activity.id} activity={activity} />
             ))
           )}
-        </MotiView>
+        </FadeInView>
       </ScrollView>
 
       {/* ── Redeem modal ── */}
