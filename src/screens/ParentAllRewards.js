@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { MotiView } from "moti";
+import { FadeInView } from "../components/FadeInView";
 import {
   ArrowLeft,
   Package,
@@ -214,7 +214,7 @@ function RewardCard({ reward, tab, onPress, delay }) {
   const dimmed = outOfStock || inactive;
 
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, translateY: 12 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "timing", duration: 280, delay }}
@@ -271,7 +271,7 @@ function RewardCard({ reward, tab, onPress, delay }) {
           </View>
         </View>
       </TouchableOpacity>
-    </MotiView>
+    </FadeInView>
   );
 }
 
@@ -386,7 +386,7 @@ export function ParentAllRewards() {
           showsVerticalScrollIndicator={false}
         >
           {/* Tab description banner */}
-          <MotiView
+          <FadeInView
             key={activeTab + "_banner"}
             from={{ opacity: 0, translateY: -6 }}
             animate={{ opacity: 1, translateY: 0 }}
@@ -408,7 +408,7 @@ export function ParentAllRewards() {
               {activeTab === "VOUCHER" &&
                 "Voucher & ưu đãi — dùng mua sắm & giải trí"}
             </Text>
-          </MotiView>
+          </FadeInView>
 
           {/* Grid */}
           {filtered.length === 0 ? (
@@ -420,7 +420,7 @@ export function ParentAllRewards() {
               </Text>
             </View>
           ) : (
-            <MotiView
+            <FadeInView
               key={activeTab}
               from={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -436,7 +436,7 @@ export function ParentAllRewards() {
                   delay={idx * 55}
                 />
               ))}
-            </MotiView>
+            </FadeInView>
           )}
         </ScrollView>
       )}

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { Coins, Target, Flame, Cake, Calendar } from "lucide-react-native";
-import { MotiView } from "moti";
+import { FadeInView } from "./FadeInView";
 
 export function ChildCard({ child, onSelect }) {
   const formatDate = (dateString) => {
@@ -11,7 +11,7 @@ export function ChildCard({ child, onSelect }) {
   };
 
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "timing", duration: 300 }}
@@ -59,7 +59,7 @@ export function ChildCard({ child, onSelect }) {
           </View>
         </View>
       </TouchableOpacity>
-    </MotiView>
+    </FadeInView>
   );
 }
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Gamepad2, FileQuestion, Gift } from "lucide-react-native";
-import { MotiView } from "moti";
+import { FadeInView } from "./FadeInView";
 
 const activityIcons = {
   game: Gamepad2,
@@ -42,7 +42,7 @@ export function ActivityItem({ activity }) {
   const colors = activityColors[activity.type];
 
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, translateY: 8 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "timing", duration: 300 }}
@@ -76,7 +76,7 @@ export function ActivityItem({ activity }) {
         </Text>
         <Text style={styles.time}>{formatTime(activity.timestamp)}</Text>
       </View>
-    </MotiView>
+    </FadeInView>
   );
 }
 

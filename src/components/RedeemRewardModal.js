@@ -9,7 +9,7 @@ import {
   Dimensions,
   Pressable,
 } from "react-native";
-import { MotiView } from "moti";
+import { FadeInView } from "./FadeInView";
 import {
   Coins,
   Gift,
@@ -289,7 +289,7 @@ export function RedeemRewardModal({
           showsVerticalScrollIndicator={false}
         >
           {filtered.map((reward, idx) => (
-            <MotiView
+            <FadeInView
               key={reward.id}
               from={{ opacity: 0, translateY: 8 }}
               animate={{ opacity: 1, translateY: 0 }}
@@ -301,14 +301,14 @@ export function RedeemRewardModal({
                 currentCoins={currentCoins}
                 onSelect={setSelected}
               />
-            </MotiView>
+            </FadeInView>
           ))}
         </ScrollView>
 
         {/* Footer */}
         <View style={styles.footer}>
           {selected && (
-            <MotiView
+            <FadeInView
               from={{ opacity: 0, translateY: 8 }}
               animate={{ opacity: 1, translateY: 0 }}
               transition={{ type: "timing", duration: 200 }}
@@ -327,7 +327,7 @@ export function RedeemRewardModal({
                 <Coins size={13} color="#D97706" />
                 <Text style={styles.summaryCoinText}>-{selected.coins}</Text>
               </View>
-            </MotiView>
+            </FadeInView>
           )}
 
           <View style={styles.footerBtns}>
