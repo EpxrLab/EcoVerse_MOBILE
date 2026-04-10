@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Image,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,40 +24,16 @@ import {
   Truck,
   MapPin,
   Clock,
-  ShoppingBag,
+  XCircle,
 } from "lucide-react-native";
 import { ActivityItem } from "../components/ActivityItem";
-import { RedeemRewardModal } from "../components/RedeemRewardModal";
+import {
+  confirmRequest,
+  getMyRequests,
+  getParentChildren,
+} from "../services";
 
 const { width } = Dimensions.get("window");
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_CHILDREN = [
-  {
-    id: "1",
-    name: "Nguyễn Minh Anh",
-    avatar_url: null,
-    class_name: "Lớp 4A",
-    school_name: "Tiểu học Lê Văn Tám",
-    level: 5,
-    coins: 320,
-    accuracy: 87,
-    streak_days: 12,
-  },
-  {
-    id: "2",
-    name: "Nguyễn Gia Bảo",
-    avatar_url: null,
-    class_name: "Lớp 2B",
-    school_name: "Tiểu học Lê Văn Tám",
-    level: 3,
-    coins: 150,
-    accuracy: 74,
-    streak_days: 5,
-  },
-];
-
-const MOCK_STATS = { weekly_coins: 45, class_rank: 3 };
 
 const MOCK_ACTIVITIES = [
   {
@@ -101,24 +78,7 @@ const MOCK_ACTIVITIES = [
   },
 ];
 
-const INITIAL_REWARDS = [
-  {
-    id: "PR-1",
-    name: "Vé xem phim CGV",
-    campaign: "Tái chế Nhựa",
-    status: "shipping",
-    date: "25/01/2026",
-    image: "🎬",
-  },
-  {
-    id: "PR-2",
-    name: "Voucher Tiki 50k",
-    campaign: "Chiến dịch Xanh",
-    status: "collected",
-    date: "20/01/2026",
-    image: "🎫",
-  },
-];
+// INITIAL_REWARDS moved to state
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const getStatusInfo = (status) => {
@@ -131,25 +91,42 @@ const getStatusInfo = (status) => {
         Icon: Truck,
       };
     case "at_school":
+    case "APPROVED":
       return {
-        label: "Đã về trường",
+        label: "Đã duyệt",
         bg: "#EFF6FF",
         text: "#2563EB",
         Icon: MapPin,
       };
     case "collected":
+    case "DELIVERED":
       return {
-        label: "Con đã nhận",
+        label: "Đã giao",
         bg: "#F0FDF4",
         text: "#16A34A",
         Icon: Gift,
       };
     case "parent_confirmed":
+    case "CONFIRMED":
       return {
-        label: "Đã xác nhận",
+        label: "Hoàn tất",
         bg: "#F3F4F6",
         text: "#6B7280",
         Icon: CheckCircle,
+      };
+    case "PENDING":
+      return {
+        label: "Đang chờ",
+        bg: "#FFF7ED",
+        text: "#EA580C",
+        Icon: Clock,
+      };
+    case "REJECTED":
+      return {
+        label: "Từ chối",
+        bg: "#FEE2E2",
+        text: "#EF4444",
+        Icon: XCircle,
       };
     default:
       return { label: status, bg: "#F3F4F6", text: "#6B7280", Icon: Gift };
@@ -222,15 +199,22 @@ function RewardRow({ reward, onConfirm }) {
   return (
     <View style={styles.rewardCard}>
       <View style={styles.rewardEmoji}>
-        <Text style={{ fontSize: 22 }}>{reward.image}</Text>
+        {reward.rewardImagePresignedUrl ? (
+          <Image
+            source={{ uri: reward.rewardImagePresignedUrl }}
+            style={{ width: "100%", height: "100%", borderRadius: 10 }}
+          />
+        ) : (
+          <Gift size={22} color="#9CA3AF" />
+        )}
       </View>
       <View style={styles.rewardBody}>
         <View style={styles.rewardTopRow}>
           <View>
             <View style={styles.campaignTag}>
-              <Text style={styles.campaignTagText}>{reward.campaign}</Text>
+              <Text style={styles.campaignTagText}>{reward.requestCode || "Đổi quà"}</Text>
             </View>
-            <Text style={styles.rewardName}>{reward.name}</Text>
+            <Text style={styles.rewardName}>{reward.rewardName}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: bg }]}>
             <StatusIcon size={11} color={text} />
@@ -240,18 +224,20 @@ function RewardRow({ reward, onConfirm }) {
         <View style={styles.rewardFooter}>
           <View style={styles.dateRow}>
             <Clock size={11} color="#9CA3AF" />
-            <Text style={styles.dateText}>{reward.date}</Text>
+            <Text style={styles.dateText}>
+              {new Date(reward.createdAt).toLocaleDateString("vi-VN")}
+            </Text>
           </View>
-          {reward.status === "collected" && (
+          {reward.status === "DELIVERED" && (
             <TouchableOpacity
               style={styles.confirmBtn}
               onPress={() => onConfirm(reward.id)}
               activeOpacity={0.8}
             >
-              <Text style={styles.confirmBtnText}>Xác nhận con đã nhận</Text>
+              <Text style={styles.confirmBtnText}>Đã nhận quà</Text>
             </TouchableOpacity>
           )}
-          {reward.status === "parent_confirmed" && (
+          {reward.status === "CONFIRMED" && (
             <View style={styles.confirmedRow}>
               <CheckCircle size={12} color="#10B981" />
               <Text style={styles.confirmedText}>Phụ huynh đã xác nhận</Text>
@@ -270,30 +256,82 @@ export default function ParentChildDetail() {
   const insets = useSafeAreaInsets();
 
   const { childId } = route.params || {};
-  const child = MOCK_CHILDREN.find((c) => c.id === childId) || MOCK_CHILDREN[0];
 
-  const [currentCoins, setCurrentCoins] = useState(child.coins);
-  const [rewards, setRewards] = useState(INITIAL_REWARDS);
-  const [redeemModalVisible, setRedeemModalVisible] = useState(false);
+  const [child, setChild] = useState(null);
+  const [currentCoins, setCurrentCoins] = useState(0);
+  const [rewards, setRewards] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleConfirm = (id) => {
-    setRewards((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "parent_confirmed" } : r)),
-    );
+  React.useEffect(() => {
+    fetchData();
+  }, [childId]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [resChildren, resRewards] = await Promise.all([
+        getParentChildren(),
+        getMyRequests(),
+      ]);
+
+      if (resChildren && resChildren.data) {
+        const found = resChildren.data.find((c) => c.studentId === childId);
+        if (found) {
+          setChild(found);
+          setCurrentCoins(found.totalCoin || 0);
+        }
+      }
+
+      if (resRewards && resRewards.data) {
+        // Filter rewards for this student and only show pending/delivered
+        const studentRewards = resRewards.data.filter(
+          (r) =>
+            r.studentId === childId &&
+            (r.status === "PENDING" || r.status === "DELIVERED"),
+        );
+        setRewards(studentRewards);
+      }
+    } catch (error) {
+      console.log("Error fetching child detail:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirm = async (id) => {
+    try {
+      const res = await confirmRequest(id);
+      if (res) {
+        fetchData();
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleRedeem = (reward) => {
-    setCurrentCoins((prev) => prev - reward.coins);
-    const newReward = {
-      id: `PR-${Date.now()}`,
-      name: reward.name,
-      campaign: "Đổi quà",
-      status: "shipping",
-      date: new Date().toLocaleDateString("vi-VN"),
-      image: reward.image,
-    };
-    setRewards((prev) => [newReward, ...prev]);
+    // Refresh data after successful redeem (should be handled in modal or here)
+    setTimeout(() => fetchData(), 500);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Đang tải thông tin...</Text>
+      </View>
+    );
+  }
+
+  if (!child) {
+    return (
+      <View style={[styles.screen, { justifyContent: "center", alignItems: "center" }]}>
+        <Text>Không tìm thấy thông tin học sinh</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
+          <Text style={{ color: "#059669" }}>Quay lại</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -310,17 +348,14 @@ export default function ParentChildDetail() {
 
         <View style={styles.heroContent}>
           <View style={styles.heroAvatar}>
-            <Text style={styles.heroAvatarInitial}>{child.name.charAt(0)}</Text>
+            <Text style={styles.heroAvatarInitial}>{child.studentFullName.charAt(0)}</Text>
           </View>
           <View style={styles.heroInfo}>
-            <Text style={styles.heroName}>{child.name}</Text>
+            <Text style={styles.heroName}>{child.studentFullName}</Text>
             <Text style={styles.heroMeta}>
-              {child.class_name} · {child.school_name}
+              Lớp {child.gradeLevel}{child.className} {child.schoolName ? `· ${child.schoolName}` : ""}
             </Text>
-            <View style={styles.levelBadge}>
-              <Trophy size={11} color="#FFFFFF" />
-              <Text style={styles.levelText}>Level {child.level}</Text>
-            </View>
+            {/* Removed Level badge as requested */}
           </View>
         </View>
       </View>
@@ -337,31 +372,28 @@ export default function ParentChildDetail() {
             iconColor="#F59E0B"
             label="Tổng xu"
             value={currentCoins}
-            sub={`+${MOCK_STATS.weekly_coins} tuần này`}
+            sub={`Mã học sinh: ${child.studentCode}`}
             delay={0}
           />
           <StatCard
             icon={Target}
             iconColor="#059669"
-            label="Chính xác"
-            value={`${child.accuracy}%`}
-            progress={child.accuracy}
+            label="Ngày sinh"
+            value={child.dob ? new Date(child.dob).toLocaleDateString("vi-VN") : "N/A"}
             delay={80}
           />
           <StatCard
             icon={Flame}
             iconColor="#F97316"
-            label="Streak"
-            value={`${child.streak_days} ngày`}
-            sub="Chuỗi ngày liên tục"
+            label="Giới tính"
+            value={child.gender === "MALE" ? "Nam" : "Nữ"}
             delay={160}
           />
           <StatCard
             icon={Medal}
             iconColor="#3B82F6"
-            label="Xếp hạng"
-            value={`#${MOCK_STATS.class_rank}`}
-            sub="Trong lớp"
+            label="Trạng thái"
+            value={child.accountStatus === "ACTIVE" ? "Hoạt động" : "Khóa"}
             delay={240}
           />
         </View>
@@ -372,20 +404,12 @@ export default function ParentChildDetail() {
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: "timing", duration: 350, delay: 300 }}
         >
-          {/* Section header with "Đổi quà cho con" button */}
+          {/* Section header */}
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <Gift size={18} color="#DC2626" />
               <Text style={styles.sectionTitle}>Theo dõi quà tặng</Text>
             </View>
-            <TouchableOpacity
-              style={styles.redeemTriggerBtn}
-              onPress={() => setRedeemModalVisible(true)}
-              activeOpacity={0.8}
-            >
-              <ShoppingBag size={13} color="#FFFFFF" />
-              <Text style={styles.redeemTriggerText}>Đổi quà cho con</Text>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.rewardList}>
@@ -414,14 +438,7 @@ export default function ParentChildDetail() {
         </FadeInView>
       </ScrollView>
 
-      {/* ── Redeem modal ── */}
-      <RedeemRewardModal
-        visible={redeemModalVisible}
-        onClose={() => setRedeemModalVisible(false)}
-        currentCoins={currentCoins}
-        childName={child.name}
-        onRedeem={handleRedeem}
-      />
+      {/* Redeem modal removed */}
     </View>
   );
 }

@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { Coins, Target, Flame, Cake, Calendar } from "lucide-react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Coins, Cake } from "lucide-react-native";
 import { FadeInView } from "./FadeInView";
 
 export function ChildCard({ child, onSelect }) {
@@ -29,7 +29,7 @@ export function ChildCard({ child, onSelect }) {
               {child.studentFullName}
             </Text>
             <Text style={styles.school} numberOfLines={1}>
-              {child.className} • {child.school_name}
+              Lớp {child.gradeLevel}{child.className} {child.school_name ? `• ${child.school_name}` : ""}
             </Text>
 
             <View style={styles.dobContainer}>
@@ -37,10 +37,6 @@ export function ChildCard({ child, onSelect }) {
               <Text style={styles.dobText}>
                 Ngày sinh: {formatDate(child.dob)}
               </Text>
-            </View>
-
-            <View style={styles.badgeWrapper}>
-              <Text style={styles.badge}>Level {child.gradeLevel}</Text>
             </View>
           </View>
         </View>

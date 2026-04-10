@@ -100,6 +100,74 @@ const rejectInvitation = async (id, payload) => {
   }
 };
 
+//======================Notification API================
+const getNotifications = async () => {
+  try {
+    const res = await axios.get("/notifications");
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const getUnreadCount = async () => {
+  try {
+    const res = await axios.get("/notifications/unread-count");
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const markAsRead = async (id) => {
+  try {
+    const res = await axios.post(`/notifications/${id}/read`);
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const markAllAsRead = async () => {
+  try {
+    const res = await axios.post("/notifications/read-all");
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+//======================Auth API=======================
+const forgotPassword = async (email) => {
+  try {
+    const res = await axios.post("/auth/forgot-password", { email });
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+const verifyResetPassword = async (payload) => {
+  try {
+    const res = await axios.post("/auth/verify-reset-password", payload);
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+const changePassword = async (payload) => {
+  try {
+    const res = await axios.post("/auth/change-password", payload);
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
 export {
   getAuthenticatedParent,
   getParentChildren,
@@ -111,4 +179,11 @@ export {
   getAllCamapaignInvitations,
   approveInvitation,
   rejectInvitation,
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  forgotPassword,
+  verifyResetPassword,
+  changePassword,
 };

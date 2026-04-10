@@ -8,16 +8,18 @@ import { Home, Gift, Flag, Trophy, Settings } from "lucide-react-native";
 import { View, Text } from "react-native";
 
 import ParentAuth from "./features/auth/screen/ParentAuth";
+import ForgotPassword from "./features/auth/screen/ForgotPassword";
 import ParentHome from "./screens/ParentHome";
 import ParentRewards from "./screens/ParentRewards";
 import ParentCampaigns from "./screens/ParentCampaigns";
 import ParentStats from "./screens/ParentStats";
 import ParentSettings from "./screens/ParentSettings";
-import ParentChildren from "./screens/ParentChildren";
 import ParentChildDetail from "./screens/ParentChildDetail";
 import ParentProfile from "./screens/ParentProfile";
 import { ParentAllRewards } from "./screens/ParentAllRewards";
+import ChangePassword from "./screens/ChangePassword";
 import Toast from "react-native-toast-message";
+import { NotificationProvider } from "./context/NotificationContext";
 
 const PlaceholderScreen = ({ route }) => (
   <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -53,7 +55,7 @@ function ParentTabs() {
         },
         tabBarIcon: ({ color, size }) => {
           const icons = {
-            ParentHome: Home,
+            HomeTab: Home,
             ParentRewards: Gift,
             ParentCampaigns: Flag,
             ParentStats: Trophy,
@@ -67,7 +69,7 @@ function ParentTabs() {
       })}
     >
       <Tab.Screen
-        name="ParentHome"
+        name="HomeTab"
         component={ParentHome}
         options={{ tabBarLabel: "Trang chủ" }}
       />
@@ -101,31 +103,34 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="dark" />
-        <Stack.Navigator
-          initialRouteName="ParentAuth"
-          screenOptions={{ headerShown: false, animation: "fade" }}
-        >
-          <Stack.Screen name="ParentAuth" component={ParentAuth} />
+      <NotificationProvider>
+        <NavigationContainer>
+          <StatusBar style="dark" />
+          <Stack.Navigator
+            initialRouteName="ParentAuth"
+            screenOptions={{ headerShown: false, animation: "fade" }}
+          >
+            <Stack.Screen name="ParentAuth" component={ParentAuth} />
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPassword}
+              options={{ animation: "slide_from_bottom" }}
+            />
 
-          <Stack.Screen name="ParentHome" component={ParentTabs} />
+            <Stack.Screen name="ParentHome" component={ParentTabs} />
 
-          {/* Detail screens — no tabs, full screen */}
-          <Stack.Screen
-            name="ParentChildDetail"
-            component={ParentChildDetail}
-            options={{ animation: "slide_from_right" }}
-          />
-          <Stack.Screen
-            name="ParentChildren"
-            component={ParentChildren}
-            options={{ animation: "slide_from_right" }}
-          />
-          <Stack.Screen name="ParentProfile" component={ParentProfile} />
-          <Stack.Screen name="ParentAllRewards" component={ParentAllRewards} />
-        </Stack.Navigator>
-      </NavigationContainer>
+            {/* Detail screens — no tabs, full screen */}
+            <Stack.Screen
+              name="ParentChildDetail"
+              component={ParentChildDetail}
+              options={{ animation: "slide_from_right" }}
+            />
+            <Stack.Screen name="ParentProfile" component={ParentProfile} />
+            <Stack.Screen name="ParentAllRewards" component={ParentAllRewards} />
+            <Stack.Screen name="ChangePassword" component={ChangePassword} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </NotificationProvider>
       <Toast />
     </SafeAreaProvider>
   );
