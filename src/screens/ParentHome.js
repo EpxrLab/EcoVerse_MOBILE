@@ -1,32 +1,16 @@
+
 import React from "react";
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { ChevronRight } from "lucide-react-native";
 import { MobileHeader } from "../components/MobileHeader";
 import { ChildCard } from "../components/ChildCard";
 import { ActivityItem } from "../components/ActivityItem";
-
-const MOCK_CHILDREN = [
-  {
-    studentId: "1",
-    address: "123 con cá phường Đức Nhuận tp HCM",
-    studentCode: "S001",
-    studentFullName: "Nguyễn Minh Anh",
-    className: "Lớp 4A",
-    gradeLevel: "4",
-    school_name: "Tiểu học Lê Văn Tám",
-    level: 5,
-    totalCoin: 320,
-    gender: "MALE",
-    dob: "2026-03-31",
-  },
-];
+import { getParentChildren, getAuthenticatedParent } from "../services";
 
 const MOCK_ACTIVITIES = [
   {
@@ -73,9 +57,32 @@ const MOCK_ACTIVITIES = [
 
 export default function ParentHome() {
   const navigation = useNavigation();
+  const [children, setChildren] = React.useState([]);
+
+  React.useEffect(() => {
+    fetchChildren();
+  }, []);
+
+  const fetchChildren = async () => {
+    try {
+      // Check for first login
+      const profile = await getAuthenticatedParent();
+      if (profile?.data?.isFirstLogin) {
+        navigation.replace("ChangePassword", { isFirstLogin: true });
+        return;
+      }
+
+      const res = await getParentChildren();
+      if (res && res.data) {
+        setChildren(res.data);
+      }
+    } catch (error) {
+      console.log("Error fetching children:", error);
+    }
+  };
 
   const handleSelectChild = (child) => {
-    navigation.navigate("ParentChildDetail", { childId: child.id });
+    navigation.navigate("ParentChildDetail", { childId: child.studentId });
   };
 
   return (
@@ -91,18 +98,10 @@ export default function ParentHome() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Con của tôi</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("ParentChildren")}
-              style={styles.viewAllButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-              <ChevronRight size={16} color="#34A853" />
-            </TouchableOpacity>
           </View>
 
           <View style={styles.cardList}>
-            {MOCK_CHILDREN.slice(0, 2).map((child) => (
+            {children.slice(0, 2).map((child) => (
               <ChildCard
                 key={child.studentId}
                 child={child}

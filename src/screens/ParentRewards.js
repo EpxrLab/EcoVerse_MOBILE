@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   Image,
@@ -76,90 +76,6 @@ const FILTER_STATUSES = [
   { value: "CONFIRMED", label: "Đã nhận quà" },
 ];
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_STUDENTS = [
-  {
-    studentId: "s1",
-    studentFullName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    className: "4A",
-    gender: "FEMALE",
-    dob: "15/03/2015",
-    accountStatus: "ACTIVE",
-  },
-  {
-    studentId: "s2",
-    studentFullName: "Nguyễn Gia Bảo",
-    studentCode: "HS2024002",
-    className: "2B",
-    gender: "MALE",
-    dob: "22/07/2017",
-    accountStatus: "ACTIVE",
-  },
-];
-
-const MOCK_HISTORY = [
-  {
-    id: "h1",
-    requestCode: "REQ-2026-001",
-    rewardName: "Bút chì HB",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    totalCoins: 10,
-    quantity: 2,
-    status: "PENDING",
-    createdAt: "2026-03-20T10:00:00",
-  },
-  {
-    id: "h2",
-    requestCode: "REQ-2026-002",
-    rewardName: "Voucher Tiki 50k",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Gia Bảo",
-    studentCode: "HS2024002",
-    totalCoins: 180,
-    quantity: 1,
-    status: "DELIVERED",
-    createdAt: "2026-03-18T09:30:00",
-  },
-  {
-    id: "h3",
-    requestCode: "REQ-2026-003",
-    rewardName: "Bộ màu nước sinh thái",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    totalCoins: 150,
-    quantity: 1,
-    status: "CONFIRMED",
-    createdAt: "2026-03-10T14:00:00",
-  },
-  {
-    id: "h4",
-    requestCode: "REQ-2026-004",
-    rewardName: "Vé xem phim CGV",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Gia Bảo",
-    studentCode: "HS2024002",
-    totalCoins: 200,
-    quantity: 1,
-    status: "PENDING",
-    createdAt: "2026-03-25T08:00:00",
-  },
-  {
-    id: "h5",
-    requestCode: "REQ-2026-005",
-    rewardName: "Hộp bút màu 24 cây",
-    rewardImageUrl: null,
-    studentName: "Nguyễn Minh Anh",
-    studentCode: "HS2024001",
-    totalCoins: 80,
-    quantity: 1,
-    status: "REJECTED",
-    createdAt: "2026-03-05T11:00:00",
-  },
-];
 
 // ─── Reward History Card ──────────────────────────────────────────────────────
 function RewardHistoryCard({ item, onCancel, onConfirm }) {
@@ -191,9 +107,9 @@ function RewardHistoryCard({ item, onCancel, onConfirm }) {
 
       {/* Body: image + info */}
       <View style={styles.historyBody}>
-        {item.rewardImageUrl ? (
+        {item.rewardImagePresignedUrl ? (
           <Image
-            source={{ uri: item.rewardImageUrl }}
+            source={{ uri: item.rewardImagePresignedUrl }}
             style={styles.rewardImg}
           />
         ) : (
@@ -208,12 +124,12 @@ function RewardHistoryCard({ item, onCancel, onConfirm }) {
           <View style={styles.studentInfoRow}>
             <User size={12} color="#9CA3AF" />
             <Text style={styles.studentNameText}>
-              {item.studentName} ({item.studentCode})
+              {item.studentFullName} ({item.studentCode})
             </Text>
           </View>
           <View style={styles.coinInfoRow}>
             <Coins size={14} color="#D97706" />
-            <Text style={styles.coinText}>{item.totalCoins} xu</Text>
+            <Text style={styles.coinText}>{item.totalCoin || item.totalCoins} xu</Text>
             <Text style={styles.quantityText}>x{item.quantity}</Text>
           </View>
         </View>
@@ -314,7 +230,7 @@ function ChildInfoCard({ student }) {
             <Text style={styles.infoText}>{student.studentCode}</Text>
             <Text style={styles.dividerChar}>|</Text>
             <GraduationCap size={12} color="#6B7280" />
-            <Text style={styles.infoText}>Lớp {student.className}</Text>
+            <Text style={styles.infoText}>Lớp {student.gradeLevel}{student.className}</Text>
           </View>
         </View>
 
@@ -330,14 +246,16 @@ function ChildInfoCard({ student }) {
 
       <View style={styles.redeemStats}>
         <View style={styles.statChip}>
-          <User size={13} color="#6B7280" />
-          <Text style={styles.statChipText}>
-            Giới tính: {isMale ? "Nam" : "Nữ"}
+          <Coins size={13} color="#D97706" />
+          <Text style={[styles.statChipText, { fontWeight: "700" }]}>
+            {student.totalCoin || 0} xu
           </Text>
         </View>
         <View style={styles.statChip}>
           <Clock size={13} color="#6B7280" />
-          <Text style={styles.statChipText}>Sinh: {student.dob}</Text>
+          <Text style={styles.statChipText}>
+            Sinh: {student.dob ? new Date(student.dob).toLocaleDateString("vi-VN") : "N/A"}
+          </Text>
         </View>
       </View>
     </FadeInView>
@@ -528,26 +446,19 @@ export default function ParentRewards() {
       )}
 
       {/* ── Content ── */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          activeTab === "history" && filterOpen && { paddingTop: 160 },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {activeTab === "redeem" ? (
-          students.map((item) => (
-            <ChildInfoCard key={item.studentId} student={item} />
-          ))
-        ) : filteredHistory.length > 0 ? (
-          filteredHistory.map((item, idx) => (
+      <FlatList
+        data={activeTab === "redeem" ? students : filteredHistory}
+        keyExtractor={(item, index) =>
+          (item.studentId || item.id || index).toString() + "-" + index
+        }
+        renderItem={({ item, index }) => (
+          activeTab === "redeem" ? (
+            <ChildInfoCard student={item} />
+          ) : (
             <FadeInView
-              key={item.id}
               from={{ opacity: 0, translateY: 8 }}
               animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: "timing", duration: 260, delay: idx * 50 }}
+              transition={{ type: "timing", duration: 260, delay: index * 50 }}
             >
               <RewardHistoryCard
                 item={item}
@@ -555,8 +466,9 @@ export default function ParentRewards() {
                 onConfirm={() => handleConfirm(item)}
               />
             </FadeInView>
-          ))
-        ) : (
+          )
+        )}
+        ListEmptyComponent={() => (
           <View style={styles.emptyState}>
             <History size={40} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>
@@ -566,7 +478,13 @@ export default function ParentRewards() {
             </Text>
           </View>
         )}
-      </ScrollView>
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.content,
+          activeTab === "history" && filterOpen && { paddingTop: 160 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
 }
