@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { MotiView } from "moti";
+import { FadeInView } from "../components/FadeInView";
 import {
   Bell,
   Shield,
@@ -98,7 +98,7 @@ export default function ParentSettings() {
         showsVerticalScrollIndicator={false}
       >
         {settingsSections.map((section, sIdx) => (
-          <MotiView
+          <FadeInView
             key={section.title}
             from={{ opacity: 0, translateY: 10 }}
             animate={{ opacity: 1, translateY: 0 }}
@@ -158,11 +158,11 @@ export default function ParentSettings() {
                 );
               })}
             </View>
-          </MotiView>
+          </FadeInView>
         ))}
 
         {/* Logout */}
-        <MotiView
+        <FadeInView
           from={{ opacity: 0, translateY: 10 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{
@@ -185,7 +185,7 @@ export default function ParentSettings() {
               </View>
             </TouchableOpacity>
           </View>
-        </MotiView>
+        </FadeInView>
 
         {/* Version */}
         <Text style={styles.version}>EcoVerse Parent v1.0.0</Text>

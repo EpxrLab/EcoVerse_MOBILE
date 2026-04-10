@@ -11,7 +11,7 @@ import {
   TextInput,
   Alert,
 } from "react-native";
-import { MotiView } from "moti";
+import { FadeInView } from "../components/FadeInView";
 import {
   Flag,
   Calendar,
@@ -495,7 +495,7 @@ export default function ParentCampaigns() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Hero banner */}
-        <MotiView
+        <FadeInView
           from={{ opacity: 0, translateY: 10 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: "timing", duration: 350 }}
@@ -515,7 +515,7 @@ export default function ParentCampaigns() {
               <Text style={styles.heroBadgeText}>{pendingList.length} mới</Text>
             </View>
           )}
-        </MotiView>
+        </FadeInView>
 
         {/* Tab bar */}
         <View style={styles.tabBar}>
@@ -571,7 +571,7 @@ export default function ParentCampaigns() {
 
         {/* Dropdown filter — only on responded tab */}
         {activeTab === "responded" && (
-          <MotiView
+          <FadeInView
             from={{ opacity: 0, translateY: -4 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 220 }}
@@ -603,11 +603,11 @@ export default function ParentCampaigns() {
               zIndex={500}
               zIndexInverse={100}
             />
-          </MotiView>
+          </FadeInView>
         )}
 
         {/* List */}
-        <MotiView
+        <FadeInView
           key={activeTab + dropValue}
           from={{ opacity: 0, translateX: 6 }}
           animate={{ opacity: 1, translateX: 0 }}
@@ -638,7 +638,7 @@ export default function ParentCampaigns() {
             </View>
           ) : (
             currentList.map((inv, idx) => (
-              <MotiView
+              <FadeInView
                 key={inv.campaignId}
                 from={{ opacity: 0, translateY: 10 }}
                 animate={{ opacity: 1, translateY: 0 }}
@@ -650,10 +650,10 @@ export default function ParentCampaigns() {
                   onAccept={handleAccept}
                   onRejectPress={handleRejectPress}
                 />
-              </MotiView>
+              </FadeInView>
             ))
           )}
-        </MotiView>
+        </FadeInView>
       </ScrollView>
 
       {/* Detail modal */}

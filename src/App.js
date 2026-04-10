@@ -40,12 +40,16 @@ function ParentTabs() {
           fontWeight: "500",
           marginBottom: 2,
         },
+        tabBarIconStyle: {
+          marginTop: 6,
+        },
         tabBarStyle: {
           backgroundColor: "rgba(255,255,255,0.97)",
           borderTopColor: "rgba(0,0,0,0.06)",
           borderTopWidth: 1,
-          paddingTop: 6,
-          height: 60,
+          paddingTop: 8,
+          height: 75,
+          paddingBottom: 15,
         },
         tabBarIcon: ({ color, size }) => {
           const icons = {

@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Image,
 } from "react-native";
-import { MotiView } from "moti";
+import { FadeInView } from "../components/FadeInView";
 import {
   Gift,
   History,
@@ -85,7 +85,7 @@ function RewardHistoryCard({ item, onCancel, onConfirm }) {
   const StatusIcon = status.icon;
 
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, translateY: 10 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "timing", duration: 280 }}
@@ -162,7 +162,7 @@ function RewardHistoryCard({ item, onCancel, onConfirm }) {
           )}
         </View>
       )}
-    </MotiView>
+    </FadeInView>
   );
 }
 
@@ -177,7 +177,7 @@ function ChildInfoCard({ student }) {
   };
 
   return (
-    <MotiView
+    <FadeInView
       from={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "timing", duration: 400 }}
@@ -258,7 +258,7 @@ function ChildInfoCard({ student }) {
           <Text style={styles.statChipText}>Sinh: {student.dob}</Text>
         </View>
       </View>
-    </MotiView>
+    </FadeInView>
   );
 }
 
@@ -396,7 +396,7 @@ export default function ParentRewards() {
 
       {/* ── History filter dropdown (only on history tab) ── */}
       {activeTab === "history" && (
-        <MotiView
+        <FadeInView
           from={{ opacity: 0, translateY: -6 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{ type: "timing", duration: 220 }}
@@ -442,7 +442,7 @@ export default function ParentRewards() {
           <Text style={styles.filterCount}>
             {filteredHistory.length} kết quả
           </Text>
-        </MotiView>
+        </FadeInView>
       )}
 
       {/* ── Content ── */}
@@ -461,7 +461,7 @@ export default function ParentRewards() {
           ))
         ) : filteredHistory.length > 0 ? (
           filteredHistory.map((item, idx) => (
-            <MotiView
+            <FadeInView
               key={item.id}
               from={{ opacity: 0, translateY: 8 }}
               animate={{ opacity: 1, translateY: 0 }}
@@ -472,7 +472,7 @@ export default function ParentRewards() {
                 onCancel={() => handleCancel(item)}
                 onConfirm={() => handleConfirm(item)}
               />
-            </MotiView>
+            </FadeInView>
           ))
         ) : (
           <View style={styles.emptyState}>
