@@ -34,41 +34,6 @@ import Toast from "react-native-toast-message";
 
 const { height, width } = Dimensions.get("window");
 
-const MOCK_INVITATIONS = [
-  {
-    campaignId: "c1a2b3c4-0001",
-    campaignName: "Tái chế Nhựa Tháng 3",
-    studentId: "s1",
-    studentName: "Nguyễn Minh Anh",
-    parentApprovalStatus: "INVITED",
-    invitationDeadline: "2026-04-05T23:59:00.000Z",
-  },
-  {
-    campaignId: "c1a2b3c4-0002",
-    campaignName: "Chiến dịch Xanh Mùa Hè",
-    studentId: "s2",
-    studentName: "Nguyễn Gia Bảo",
-    parentApprovalStatus: "INVITED",
-    invitationDeadline: "2026-04-10T23:59:00.000Z",
-  },
-  {
-    campaignId: "c1a2b3c4-0003",
-    campaignName: "Tiết kiệm Năng lượng",
-    studentId: "s1",
-    studentName: "Nguyễn Minh Anh",
-    parentApprovalStatus: "APPROVED",
-    invitationDeadline: "2026-03-15T23:59:00.000Z",
-  },
-  {
-    campaignId: "c1a2b3c4-0004",
-    campaignName: "Không Túi Nilon",
-    studentId: "s2",
-    studentName: "Nguyễn Gia Bảo",
-    parentApprovalStatus: "REJECTED",
-    invitationDeadline: "2026-03-10T23:59:00.000Z",
-  },
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDeadline = (iso) => {
   if (!iso) return "—";
@@ -83,7 +48,7 @@ const isExpiringSoon = (iso) => {
 };
 
 const STATUS_CONFIG = {
-  INVITED: {
+  PENDING_PARENT_APPROVAL: {
     label: "Chờ xác nhận",
     color: "#EA580C",
     bg: "#FFF7ED",
@@ -151,7 +116,7 @@ function InvitationCard({ item, onPress, onAccept, onRejectPress }) {
           </View>
 
           {/* Action buttons — only for INVITED */}
-          {item.parentApprovalStatus === "INVITED" && (
+          {item.parentApprovalStatus === "PENDING_PARENT_APPROVAL" && (
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.acceptBtn}
@@ -440,10 +405,10 @@ export default function ParentCampaigns() {
   }, []);
 
   const pendingList = invitations.filter(
-    (i) => i.parentApprovalStatus === "INVITED",
+    (i) => i.parentApprovalStatus === "PENDING_PARENT_APPROVAL",
   );
   const respondedList = invitations.filter(
-    (i) => i.parentApprovalStatus !== "INVITED",
+    (i) => i.parentApprovalStatus !== "PENDING_PARENT_APPROVAL",
   );
   const filteredResponded =
     dropValue === "ALL"
@@ -457,7 +422,7 @@ export default function ParentCampaigns() {
       const payload = {
         studentId: item.studentId,
       };
-      const res = await approveInvitation(item.id, payload);
+      const res = await approveInvitation(item.campaignId, payload);
 
       if (res) {
         Toast.show({
@@ -491,7 +456,7 @@ export default function ParentCampaigns() {
         studentId: item.studentId,
         reason: reason,
       };
-      const res = await rejectInvitation(item.id, payload);
+      const res = await rejectInvitation(item.campaignId, payload);
       if (res) {
         Toast.show({
           type: "success",
@@ -503,7 +468,8 @@ export default function ParentCampaigns() {
         Toast.show({
           type: "error",
           text1: "Từ chối tham gia thất bại!",
-          text2: "Thao tác từ chối tham gia chiến dịch của bạn chưa được ghi nhận.",
+          text2:
+            "Thao tác từ chối tham gia chiến dịch của bạn chưa được ghi nhận.",
         });
       }
       setRejectVisible(false);

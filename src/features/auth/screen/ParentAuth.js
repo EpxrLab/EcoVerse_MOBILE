@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MotiView } from "moti";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
+import { Phone, Lock, Eye, EyeOff } from "lucide-react-native";
 import { loginFunction } from "../services";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -72,12 +72,11 @@ function Toast({ message, type, visible }) {
 export default function ParentAuth() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
   const [passFocused, setPassFocused] = useState(false);
   const [toast, setToast] = useState({
     visible: false,
@@ -91,29 +90,29 @@ export default function ParentAuth() {
   };
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
+    if (!phone.trim() || !password.trim()) {
       showToast("Vui lòng nhập đầy đủ thông tin", "error");
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      showToast("Email không hợp lệ", "error");
+    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+    if (!phoneRegex.test(phone.trim())) {
+      showToast("Số điện thoại không hợp lệ", "error");
       return;
     }
     setIsLoading(true);
 
     const payload = {
-      emailOrUsername: email,
+      emailOrUsername: phone, // truyền số điện thoại vào field emailOrUsername
       password: password,
     };
     const res = await loginFunction(payload);
-    if (res) {
+    if (res && res.data.role === "PARENT") {
       showToast("Chào mừng trở lại! 🌿", "success");
       await AsyncStorage.setItem("accessToken", res?.data?.accessToken);
       await AsyncStorage.setItem("refreshToken", res?.data?.refreshToken);
       navigation.navigate("ParentHome");
     } else {
-      showToast("Email hoặc mật khẩu không đúng", "error");
+      showToast("Số điện thoại hoặc mật khẩu không đúng", "error");
     }
     setIsLoading(false);
   };
@@ -209,31 +208,31 @@ export default function ParentAuth() {
             <Text style={styles.panelTitle}>Đăng nhập</Text>
             <Text style={styles.panelSub}>Dành cho Phụ huynh</Text>
 
-            {/* Email field */}
+            {/* Phone field */}
             <MotiView
-              animate={{ borderColor: emailFocused ? "#10B981" : "#E5E7EB" }}
+              animate={{ borderColor: phoneFocused ? "#10B981" : "#E5E7EB" }}
               transition={{ type: "timing", duration: 180 }}
               style={styles.fieldWrap}
             >
               <View
                 style={[
                   styles.fieldIconBox,
-                  emailFocused && styles.fieldIconBoxActive,
+                  phoneFocused && styles.fieldIconBoxActive,
                 ]}
               >
-                <Mail size={16} color={emailFocused ? "#10B981" : "#9CA3AF"} />
+                <Phone size={16} color={phoneFocused ? "#10B981" : "#9CA3AF"} />
               </View>
               <TextInput
                 style={styles.fieldInput}
-                placeholder="Email"
+                placeholder="Số điện thoại"
                 placeholderTextColor="#C0C9D4"
-                keyboardType="email-address"
-                autoCapitalize="none"
+                keyboardType="phone-pad" // bàn phím số điện thoại
                 autoCorrect={false}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
+                value={phone}
+                onChangeText={setPhone}
+                onFocus={() => setPhoneFocused(true)}
+                onBlur={() => setPhoneFocused(false)}
+                maxLength={10} // giới hạn 10 chữ số
               />
             </MotiView>
 
