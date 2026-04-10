@@ -297,7 +297,11 @@ export default function ParentAuth() {
             </FadeInView>
 
             {/* Forgot */}
-            <TouchableOpacity style={styles.forgotRow} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.forgotRow}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("ForgotPassword")}
+            >
               <Text style={styles.forgotText}>Quên mật khẩu?</Text>
             </TouchableOpacity>
 

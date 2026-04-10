@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
+  FlatList,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -488,173 +489,163 @@ export default function ParentCampaigns() {
     <View style={styles.screen}>
       <MobileHeader title="Chiến dịch" />
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Hero banner */}
-        <FadeInView
-          from={{ opacity: 0, translateY: 10 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: "timing", duration: 350 }}
-          style={styles.heroBanner}
-        >
-          <View style={styles.heroIcon}>
-            <Flag size={22} color="#059669" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>Lời mời chiến dịch</Text>
-            <Text style={styles.heroDesc}>
-              Xác nhận cho con tham gia các chiến dịch môi trường
-            </Text>
-          </View>
-          {pendingList.length > 0 && (
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>{pendingList.length} mới</Text>
-            </View>
-          )}
-        </FadeInView>
-
-        {/* Tab bar */}
-        <View style={styles.tabBar}>
-          {[
-            {
-              key: "pending",
-              label: "Chờ xác nhận",
-              count: pendingList.length,
-            },
-            {
-              key: "responded",
-              label: "Đã phản hồi",
-              count: respondedList.length,
-            },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-              onPress={() => setActiveTab(tab.key)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === tab.key && styles.tabTextActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-              {tab.count > 0 && (
-                <View
-                  style={[
-                    styles.tabBadge,
-                    {
-                      backgroundColor:
-                        activeTab === tab.key ? "#F97316" : "#E5E7EB",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.tabBadgeText,
-                      { color: activeTab === tab.key ? "#fff" : "#9CA3AF" },
-                    ]}
-                  >
-                    {tab.count}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Dropdown filter — only on responded tab */}
-        {activeTab === "responded" && (
+      <FlatList
+        data={currentList}
+        keyExtractor={(item, index) =>
+          item.id ? `${item.id}-${index}` : `inv-${index}`
+        }
+        renderItem={({ item, index }) => (
           <FadeInView
-            from={{ opacity: 0, translateY: -4 }}
+            from={{ opacity: 0, translateY: 10 }}
             animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "timing", duration: 220 }}
-            style={{ zIndex: 500 }}
+            transition={{ type: "timing", duration: 280, delay: index * 55 }}
           >
-            <View style={styles.filterLabelRow}>
-              <Filter size={13} color="#6B7280" />
-              <Text style={styles.filterLabel}>Lọc theo kết quả phản hồi</Text>
-              <Text style={styles.filterCount}>
-                {filteredResponded.length} kết quả
-              </Text>
-            </View>
-            <DropDownPicker
-              open={dropOpen}
-              value={dropValue}
-              items={dropItems}
-              setOpen={setDropOpen}
-              setValue={setDropValue}
-              style={styles.picker}
-              dropDownContainerStyle={styles.pickerDropdown}
-              textStyle={styles.pickerText}
-              selectedItemLabelStyle={{ fontWeight: "700", color: "#059669" }}
-              ArrowUpIconComponent={() => (
-                <Text style={styles.pickerArrow}>▲</Text>
-              )}
-              ArrowDownIconComponent={() => (
-                <Text style={styles.pickerArrow}>▼</Text>
-              )}
-              zIndex={500}
-              zIndexInverse={100}
+            <InvitationCard
+              item={item}
+              onPress={handleViewDetail}
+              onAccept={handleAccept}
+              onRejectPress={handleRejectPress}
             />
           </FadeInView>
         )}
-
-        {/* List */}
-        <FadeInView
-          key={activeTab + dropValue}
-          from={{ opacity: 0, translateX: 6 }}
-          animate={{ opacity: 1, translateX: 0 }}
-          transition={{ type: "timing", duration: 240 }}
-          style={{ zIndex: 1 }}
-        >
-          {currentList.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconBox}>
-                {activeTab === "pending" ? (
-                  <Flag size={32} color="#A7F3D0" />
-                ) : (
-                  <CheckCircle2 size={32} color="#D1D5DB" />
-                )}
+        ListHeaderComponentStyle={{ zIndex: dropOpen ? 1000 : 1 }}
+        ListHeaderComponent={() => (
+          <View style={{ gap: 12, marginBottom: 12 }}>
+            {/* Hero banner */}
+            <FadeInView
+              from={{ opacity: 0, translateY: 10 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 350 }}
+              style={styles.heroBanner}
+            >
+              <View style={styles.heroIcon}>
+                <Flag size={22} color="#059669" />
               </View>
-              <Text style={styles.emptyTitle}>
-                {activeTab === "pending"
-                  ? "Không có lời mời nào"
-                  : dropValue !== "ALL"
-                    ? `Không có chiến dịch "${dropItems.find((d) => d.value === dropValue)?.label}"`
-                    : "Chưa có phản hồi nào"}
-              </Text>
-              <Text style={styles.emptyDesc}>
-                {activeTab === "pending"
-                  ? "Hiện tại không có chiến dịch nào mời con bạn tham gia"
-                  : "Các lời mời đã phản hồi sẽ hiển thị ở đây"}
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.heroTitle}>Lời mời chiến dịch</Text>
+                <Text style={styles.heroDesc}>
+                  Xác nhận cho con tham gia các chiến dịch môi trường
+                </Text>
+              </View>
+              {pendingList.length > 0 && (
+                <View style={styles.heroBadge}>
+                  <Text style={styles.heroBadgeText}>{pendingList.length} mới</Text>
+                </View>
+              )}
+            </FadeInView>
+
+            {/* Tab bar */}
+            <View style={styles.tabBar}>
+              {[
+                {
+                  key: "pending",
+                  label: "Chờ xác nhận",
+                  count: pendingList.length,
+                },
+                {
+                  key: "responded",
+                  label: "Đã phản hồi",
+                  count: respondedList.length,
+                },
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === tab.key && styles.tabTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                  {tab.count > 0 && (
+                    <View
+                      style={[
+                        styles.tabBadge,
+                        {
+                          backgroundColor:
+                            activeTab === tab.key ? "#F97316" : "#E5E7EB",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.tabBadgeText,
+                          { color: activeTab === tab.key ? "#fff" : "#9CA3AF" },
+                        ]}
+                      >
+                        {tab.count}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
             </View>
-          ) : (
-            currentList.map((inv, idx) => (
-              <FadeInView
-                key={inv.campaignId}
-                from={{ opacity: 0, translateY: 10 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: "timing", duration: 280, delay: idx * 55 }}
-              >
-                <InvitationCard
-                  item={inv}
-                  onPress={handleViewDetail}
-                  onAccept={handleAccept}
-                  onRejectPress={handleRejectPress}
+
+            {/* Dropdown filter — only on responded tab */}
+            {activeTab === "responded" && (
+              <View style={{ zIndex: 1100 }}>
+                <View style={styles.filterLabelRow}>
+                  <Filter size={13} color="#6B7280" />
+                  <Text style={styles.filterLabel}>Lọc theo kết quả phản hồi</Text>
+                  <Text style={styles.filterCount}>
+                    {filteredResponded.length} kết quả
+                  </Text>
+                </View>
+                <DropDownPicker
+                  open={dropOpen}
+                  value={dropValue}
+                  items={dropItems}
+                  setOpen={setDropOpen}
+                  setValue={setDropValue}
+                  style={styles.picker}
+                  dropDownContainerStyle={styles.pickerDropdown}
+                  textStyle={styles.pickerText}
+                  selectedItemLabelStyle={{ fontWeight: "700", color: "#059669" }}
+                  ArrowUpIconComponent={() => (
+                    <Text style={styles.pickerArrow}>▲</Text>
+                  )}
+                  ArrowDownIconComponent={() => (
+                    <Text style={styles.pickerArrow}>▼</Text>
+                  )}
+                  zIndex={2000}
+                  dropDownDirection="BOTTOM"
                 />
-              </FadeInView>
-            ))
-          )}
-        </FadeInView>
-      </ScrollView>
+              </View>
+            )}
+          </View>
+        )}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIconBox}>
+              {activeTab === "pending" ? (
+                <Flag size={32} color="#A7F3D0" />
+              ) : (
+                <CheckCircle2 size={32} color="#D1D5DB" />
+              )}
+            </View>
+            <Text style={styles.emptyTitle}>
+              {activeTab === "pending"
+                ? "Không có lời mời nào"
+                : dropValue !== "ALL"
+                  ? `Không có chiến dịch "${dropItems.find((d) => d.value === dropValue)?.label}"`
+                  : "Chưa có phản hồi nào"}
+            </Text>
+            <Text style={styles.emptyDesc}>
+              {activeTab === "pending"
+                ? "Hiện tại không có chiến dịch nào mời con bạn tham gia"
+                : "Các lời mời đã phản hồi sẽ hiển thị ở đây"}
+            </Text>
+          </View>
+        )}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* Detail modal */}
       <DetailModal

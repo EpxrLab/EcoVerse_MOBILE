@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
+  FlatList,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -17,16 +18,14 @@ import { FadeInView } from "../components/FadeInView";
 import {
   ArrowLeft,
   Package,
-  Sparkles,
   Ticket,
   Coins,
   Info,
   CheckCircle,
   XCircle,
-  Layers,
-  Clock,
-  FileText,
   Gift,
+  Plus,
+  Minus,
 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAllRewards, createRewardRequest } from "../services";
@@ -39,7 +38,7 @@ const CARD_WIDTH = (width - 48) / 2;
 const TABS = [
   {
     key: "PHYSICAL",
-    label: "Quà thật",
+    label: "Quà",
     icon: Package,
     color: "#059669",
     bg: "#ECFDF5",
@@ -59,15 +58,22 @@ const TYPE_EMOJI = { PHYSICAL: "🎁", VOUCHER: "🎫" };
 function RewardDetailModal({ reward, visible, onClose, tabColor }) {
   if (!reward) return null;
   const navigation = useNavigation();
+  const [quantity, setQuantity] = useState(1);
+
   const outOfStock = !reward.isUnlimited && reward.stockQuantity === 0;
   const inactive = !reward.isActive;
   const isDisable = outOfStock || inactive;
+
+  // Reset quantity when modal opens/changes reward
+  useEffect(() => {
+    if (visible) setQuantity(1);
+  }, [visible, reward?.id]);
 
   const handleRewardRequest = async (rId) => {
     try {
       const childId = await AsyncStorage.getItem("studentId");
       const payload = {
-        quantity: 1,
+        quantity: quantity,
         note: "",
         studentId: childId,
         rewardId: rId,
@@ -78,7 +84,7 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
         Toast.show({
           type: "success",
           text1: "Đổi quà thành công! 🎉",
-          text2: `Bạn đã đổi thành công món quà: ${reward.rewardName}`,
+          text2: `Bạn đã đổi thành công ${quantity} món quà: ${reward.rewardName}`,
         });
         AsyncStorage.removeItem("studentId");
         navigation.navigate("ParentHome");
@@ -93,6 +99,18 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
       onClose();
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const increment = () => {
+    if (reward.isUnlimited || quantity < reward.stockQuantity) {
+      setQuantity((q) => q + 1);
+    }
+  };
+
+  const decrement = () => {
+    if (quantity > 1) {
+      setQuantity((q) => q - 1);
     }
   };
 
@@ -111,13 +129,20 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
           contentContainerStyle={styles.detailContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Emoji hero */}
+          {/* Image hero */}
           <View
             style={[styles.detailHero, { backgroundColor: tabColor + "15" }]}
           >
-            <Text style={styles.detailEmoji}>
-              {TYPE_EMOJI[reward.rewardType]}
-            </Text>
+            {reward.imagePresignedUrl ? (
+              <Image
+                source={{ uri: reward.imagePresignedUrl }}
+                style={styles.detailImage}
+              />
+            ) : (
+              <Text style={styles.detailEmoji}>
+                {TYPE_EMOJI[reward.rewardType]}
+              </Text>
+            )}
           </View>
 
           {/* Name + status */}
@@ -149,10 +174,44 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
             </View>
           </View>
 
-          {/* Coin cost */}
-          <View style={[styles.coinRow, { backgroundColor: "#FFFBEB" }]}>
-            <Coins size={20} color="#D97706" />
-            <Text style={styles.coinCost}>{reward.coinCost} xu</Text>
+          {/* Coin cost & Quantity Selector */}
+          <View style={styles.costAndQtyRow}>
+            <View style={[styles.coinRow, { backgroundColor: "#FFFBEB" }]}>
+              <Coins size={20} color="#D97706" />
+              <Text style={styles.coinCost}>
+                {reward.coinCost * quantity} xu
+              </Text>
+            </View>
+
+            {!isDisable && (
+              <View style={styles.qtySelector}>
+                <TouchableOpacity
+                  onPress={decrement}
+                  style={[
+                    styles.qtyBtn,
+                    quantity <= 1 && styles.qtyBtnDisabled,
+                  ]}
+                  disabled={quantity <= 1}
+                >
+                  <Minus size={16} color={quantity <= 1 ? "#D1D5DB" : "#374151"} />
+                </TouchableOpacity>
+                <View style={styles.qtyBox}>
+                  <Text style={styles.qtyText}>{quantity}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={increment}
+                  style={[
+                    styles.qtyBtn,
+                    !reward.isUnlimited &&
+                      quantity >= reward.stockQuantity &&
+                      styles.qtyBtnDisabled,
+                  ]}
+                  disabled={!reward.isUnlimited && quantity >= reward.stockQuantity}
+                >
+                  <Plus size={16} color={(!reward.isUnlimited && quantity >= reward.stockQuantity) ? "#D1D5DB" : "#374151"} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Mô tả & Thông tin khác (Giữ nguyên các section của bạn) */}
@@ -377,12 +436,15 @@ export function ParentAllRewards() {
           <Text style={styles.loadingText}>Đang tải phần thưởng...</Text>
         </View>
       ) : (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.grid}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Tab description banner */}
+      <FlatList
+        data={filtered}
+        numColumns={2}
+        key={activeTab}
+        keyExtractor={(item, index) =>
+          item.id ? `${item.id}-${index}` : `allreward-${index}`
+        }
+        columnWrapperStyle={filtered.length > 0 ? styles.cardGrid : null}
+        ListHeaderComponent={() => (
           <FadeInView
             key={activeTab + "_banner"}
             from={{ opacity: 0, translateY: -6 }}
@@ -404,36 +466,28 @@ export function ParentAllRewards() {
                 "Voucher & ưu đãi — dùng mua sắm & giải trí"}
             </Text>
           </FadeInView>
-
-          {/* Grid */}
-          {filtered.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={{ fontSize: 40 }}>{TYPE_EMOJI[activeTab]}</Text>
-              <Text style={styles.emptyTitle}>Chưa có phần thưởng</Text>
-              <Text style={styles.emptyDesc}>
-                Danh mục này chưa có phần thưởng nào
-              </Text>
-            </View>
-          ) : (
-            <FadeInView
-              key={activeTab}
-              from={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ type: "timing", duration: 200 }}
-              style={styles.cardGrid}
-            >
-              {filtered.map((reward, idx) => (
-                <RewardCard
-                  key={reward.id}
-                  reward={reward}
-                  tab={currentTab}
-                  onPress={handlePressCard}
-                  delay={idx * 55}
-                />
-              ))}
-            </FadeInView>
-          )}
-        </ScrollView>
+        )}
+        renderItem={({ item, index }) => (
+          <RewardCard
+            reward={item}
+            tab={currentTab}
+            onPress={handlePressCard}
+            delay={index * 55}
+          />
+        )}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyState}>
+            <Text style={{ fontSize: 40 }}>{TYPE_EMOJI[activeTab]}</Text>
+            <Text style={styles.emptyTitle}>Chưa có phần thưởng</Text>
+            <Text style={styles.emptyDesc}>
+              Danh mục này chưa có phần thưởng nào
+            </Text>
+          </View>
+        )}
+        style={styles.scroll}
+        contentContainerStyle={styles.grid}
+        showsVerticalScrollIndicator={false}
+      />
       )}
 
       {/* ── Detail Modal ── */}
@@ -615,18 +669,20 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   detailHero: {
-    height: 120,
+    height: 180,
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: 20,
     marginTop: 16,
     borderRadius: 16,
+    overflow: "hidden",
   },
-  detailEmoji: { fontSize: 52 },
+  detailImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  detailEmoji: { fontSize: 62 },
   detailContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 20,
     gap: 16,
   },
 
@@ -648,7 +704,14 @@ const styles = StyleSheet.create({
   },
   detailStatusText: { fontSize: 11, fontWeight: "700" },
 
+  costAndQtyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
   coinRow: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -657,6 +720,40 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   coinCost: { fontSize: 20, fontWeight: "800", color: "#D97706" },
+
+  qtySelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    padding: 4,
+  },
+  qtyBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    elevation: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  qtyBtnDisabled: {
+    backgroundColor: "#F9FAFB",
+    elevation: 0,
+  },
+  qtyBox: {
+    minWidth: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  qtyText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
 
   detailSection: { gap: 6 },
   detailSectionHeader: { flexDirection: "row", alignItems: "center", gap: 6 },

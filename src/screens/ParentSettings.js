@@ -38,7 +38,12 @@ export default function ParentSettings() {
           action: "navigate",
           screen: "ParentProfile",
         },
-        { icon: Shield, label: "Bảo mật", action: "navigate" },
+        {
+          icon: Shield,
+          label: "Bảo mật",
+          action: "navigate",
+          screen: "ChangePassword",
+        },
       ],
     },
     {
