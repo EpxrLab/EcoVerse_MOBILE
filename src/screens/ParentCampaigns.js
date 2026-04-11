@@ -67,6 +67,18 @@ const STATUS_CONFIG = {
     bg: "#FEF2F2",
     icon: XCircle,
   },
+  PENDING: {
+    label: "Chờ xác nhận",
+    color: "#EA580C",
+    bg: "#FFF7ED",
+    icon: Clock,
+  },
+  PREPARED: {
+    label: "Chờ xác nhận",
+    color: "#EA580C",
+    bg: "#FFF7ED",
+    icon: Clock,
+  },
 };
 
 // ─── Invitation Card ──────────────────────────────────────────────────────────
@@ -116,8 +128,10 @@ function InvitationCard({ item, onPress, onAccept, onRejectPress }) {
             </Text>
           </View>
 
-          {/* Action buttons — only for INVITED */}
-          {item.parentApprovalStatus === "INVITED" && (
+          {/* Action buttons — only for INVITED, PENDING or PREPARED */}
+          {(item.parentApprovalStatus === "INVITED" ||
+            item.parentApprovalStatus === "PENDING" ||
+            item.parentApprovalStatus === "PREPARED") && (
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.acceptBtn}
@@ -338,7 +352,9 @@ function DetailModal({
 
           {/* Footer */}
           <View style={styles.detailFooter}>
-            {invitation.parentApprovalStatus === "INVITED" ? (
+            {invitation.parentApprovalStatus === "INVITED" ||
+            invitation.parentApprovalStatus === "PENDING" ||
+            invitation.parentApprovalStatus === "PREPARED" ? (
               <View style={styles.footerBtns}>
                 <TouchableOpacity
                   style={styles.modalRejectBtn}
@@ -406,10 +422,16 @@ export default function ParentCampaigns() {
   }, []);
 
   const pendingList = invitations.filter(
-    (i) => i.parentApprovalStatus === "INVITED",
+    (i) =>
+      i.parentApprovalStatus === "INVITED" ||
+      i.parentApprovalStatus === "PENDING" ||
+      i.parentApprovalStatus === "PREPARED",
   );
   const respondedList = invitations.filter(
-    (i) => i.parentApprovalStatus !== "INVITED",
+    (i) =>
+      i.parentApprovalStatus !== "INVITED" &&
+      i.parentApprovalStatus !== "PENDING" &&
+      i.parentApprovalStatus !== "PREPARED",
   );
   const filteredResponded =
     dropValue === "ALL"
