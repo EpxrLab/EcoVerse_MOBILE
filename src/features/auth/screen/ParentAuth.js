@@ -93,11 +93,12 @@ function Toast({ message, type, visible }) {
 export default function ParentAuth() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [phone, setPhone] = useState("");
+
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [phoneFocused, setPhoneFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const [passFocused, setPassFocused] = useState(false);
   const [toast, setToast] = useState({
     visible: false,
@@ -111,7 +112,7 @@ export default function ParentAuth() {
   };
 
   const handleLogin = async () => {
-    if (!phone.trim() || !password.trim()) {
+    if (!email.trim() || !password.trim()) {
       showToast("Vui lòng nhập đầy đủ thông tin", "error");
       return;
     }
@@ -124,17 +125,17 @@ export default function ParentAuth() {
     setIsLoading(true);
 
     const payload = {
-      emailOrUsername: phone, // truyền số điện thoại vào field emailOrUsername
+      emailOrUsername: email,
       password: password,
     };
     const res = await loginFunction(payload);
-    if (res && res.data.role === "PARENT") {
+    if (res) {
       showToast("Chào mừng trở lại! 🌿", "success");
       await AsyncStorage.setItem("accessToken", res?.data?.accessToken);
       await AsyncStorage.setItem("refreshToken", res?.data?.refreshToken);
       navigation.navigate("ParentHome");
     } else {
-      showToast("Số điện thoại hoặc mật khẩu không đúng", "error");
+      showToast("Email hoặc mật khẩu không đúng", "error");
     }
     setIsLoading(false);
   };
@@ -239,7 +240,7 @@ export default function ParentAuth() {
               <View
                 style={[
                   styles.fieldIconBox,
-                  phoneFocused && styles.fieldIconBoxActive,
+                  emailFocused && styles.fieldIconBoxActive,
                 ]}
               >
                 <User size={16} color={emailFocused ? "#10B981" : "#9CA3AF"} />
@@ -251,11 +252,10 @@ export default function ParentAuth() {
                 keyboardType="default"
                 autoCapitalize="none"
                 autoCorrect={false}
-                value={phone}
-                onChangeText={setPhone}
-                onFocus={() => setPhoneFocused(true)}
-                onBlur={() => setPhoneFocused(false)}
-                maxLength={10} // giới hạn 10 chữ số
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
               />
             </FadeInView>
 
