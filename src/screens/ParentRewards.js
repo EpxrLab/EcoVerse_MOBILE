@@ -20,6 +20,7 @@ import {
   Package,
   Coins,
   Filter,
+  Flag,
 } from "lucide-react-native";
 import { MobileHeader } from "../components/MobileHeader";
 import { useNavigation } from "@react-navigation/native";
@@ -27,7 +28,9 @@ import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   cancelRequest,
+  confirmPartnershipDelivery,
   confirmRequest,
+  getMyPartnershipDeliveries,
   getMyRequests,
   getParentChildren,
 } from "../services";
@@ -76,6 +79,38 @@ const FILTER_STATUSES = [
   { value: "CONFIRMED", label: "Đã nhận quà" },
 ];
 
+const PARTNERSHIP_STATUS_MAP = {
+  PREPARING: {
+    label: "Đang chuẩn bị",
+    color: "#F59E0B",
+    bg: "#FEF3C7",
+    icon: Clock,
+  },
+  SHIPPED: {
+    label: "Đang giao",
+    color: "#3B82F6",
+    bg: "#DBEAFE",
+    icon: Package,
+  },
+  ARRIVED: {
+    label: "Đã đến nơi",
+    color: "#8B5CF6",
+    bg: "#EDE9FE",
+    icon: Package,
+  },
+  DELIVERED: {
+    label: "Đã giao quà",
+    color: "#10B981",
+    bg: "#D1FAE5",
+    icon: CheckCircle,
+  },
+  CONFIRMED: {
+    label: "Xác nhận đã nhận",
+    color: "#059669",
+    bg: "#ECFDF5",
+    icon: CheckCircle,
+  },
+};
 
 // ─── Reward History Card ──────────────────────────────────────────────────────
 function RewardHistoryCard({ item, onCancel, onConfirm }) {
@@ -158,6 +193,86 @@ function RewardHistoryCard({ item, onCancel, onConfirm }) {
               <Text style={styles.confirmBtnText}>Đã nhận quà</Text>
             </TouchableOpacity>
           )}
+        </View>
+      )}
+    </FadeInView>
+  );
+}
+
+// ─── Partnership Reward Card ──────────────────────────────────────────────────
+function PartnershipRewardCard({ item, onConfirm }) {
+  const status = PARTNERSHIP_STATUS_MAP[item.status] || PARTNERSHIP_STATUS_MAP.PREPARING;
+  const StatusIcon = status.icon;
+
+  return (
+    <FadeInView
+      from={{ opacity: 0, translateY: 10 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: "timing", duration: 280 }}
+      style={styles.historyCard}
+    >
+      <View style={styles.historyHeader}>
+        <View style={styles.historyCodeBox}>
+          <Text style={styles.historyCode}>{item.campaignName}</Text>
+          <Text style={styles.historyDate}>
+            {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+          </Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+          <StatusIcon size={12} color={status.color} />
+          <Text style={[styles.statusText, { color: status.color }]}>
+            {status.label}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.historyBody}>
+        {item.rewardImagePresignedUrl ? (
+          <Image
+            source={{ uri: item.rewardImagePresignedUrl }}
+            style={styles.rewardImg}
+          />
+        ) : (
+          <View style={[styles.rewardImg, styles.rewardImgPlaceholder]}>
+            <Gift size={24} color="#D1D5DB" />
+          </View>
+        )}
+        <View style={styles.rewardMainInfo}>
+          <Text style={styles.rewardName} numberOfLines={1}>
+            {item.rewardName}
+          </Text>
+          <View style={styles.studentInfoRow}>
+            <User size={12} color="#9CA3AF" />
+            <Text style={styles.studentNameText}>
+              {item.studentName} ({item.studentCode})
+            </Text>
+          </View>
+          <View style={styles.coinInfoRow}>
+            <Flag size={14} color="#059669" />
+            <Text style={[styles.coinText, { color: "#059669" }]}>Hạng {item.rankPosition}</Text>
+            <Text style={styles.quantityText}>Điểm: {item.totalScore}</Text>
+          </View>
+        </View>
+      </View>
+
+      {item.shippingTrackingCode && (
+        <View style={styles.trackingInfo}>
+          <Package size={14} color="#6B7280" />
+          <Text style={styles.trackingText}>Mã vận đơn: {item.shippingTrackingCode}</Text>
+        </View>
+      )}
+
+      {/* Action buttons */}
+      {item.status === "DELIVERED" && (
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.confirmBtn]}
+            onPress={() => onConfirm(item.id)}
+            activeOpacity={0.8}
+          >
+            <CheckCircle size={14} color="#FFFFFF" />
+            <Text style={styles.confirmBtnText}>Xác nhận đã nhận</Text>
+          </TouchableOpacity>
         </View>
       )}
     </FadeInView>
@@ -267,6 +382,7 @@ export default function ParentRewards() {
   const [activeTab, setActiveTab] = useState("redeem");
   const [students, setStudents] = useState([]);
   const [history, setHistory] = useState([]);
+  const [partnerships, setPartnerships] = useState([]);
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -276,8 +392,10 @@ export default function ParentRewards() {
     try {
       const res = await getParentChildren();
       const res1 = await getMyRequests();
+      const res2 = await getMyPartnershipDeliveries();
       setStudents(res.data);
       setHistory(res1.data);
+      setPartnerships(res2.data);
     } catch (error) {
       console.log(error);
     }
@@ -326,6 +444,29 @@ export default function ParentRewards() {
           type: "error",
           text1: "Xác nhận đã nhận quà thất bại!",
           text2: `Thao tác xác nhận đã nhận quà của bạn chưa được ghi nhận.`,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleConfirmPartnership = async (id) => {
+    try {
+      const res = await confirmPartnershipDelivery(id);
+
+      if (res) {
+        Toast.show({
+          type: "success",
+          text1: "Xác nhận đã nhận quà thành công!",
+          text2: "Cảm ơn bạn đã tham gia chiến dịch.",
+        });
+        fetchData();
+      } else {
+        Toast.show({
+          type: "error",
+          text1: "Xác nhận thất bại!",
+          text2: "Thao tác xác nhận của bạn chưa được ghi nhận.",
         });
       }
     } catch (error) {
@@ -392,6 +533,25 @@ export default function ParentRewards() {
             </View>
           )}
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "campaign" && styles.tabActive]}
+          onPress={() => setActiveTab("campaign")}
+          activeOpacity={0.8}
+        >
+          <Flag
+            size={15}
+            color={activeTab === "campaign" ? "#059669" : "#9CA3AF"}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "campaign" && styles.tabTextActive,
+            ]}
+          >
+            Chiến dịch
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── History filter dropdown (only on history tab) ── */}
@@ -447,34 +607,67 @@ export default function ParentRewards() {
 
       {/* ── Content ── */}
       <FlatList
-        data={activeTab === "redeem" ? students : filteredHistory}
+        data={
+          activeTab === "redeem"
+            ? students
+            : activeTab === "history"
+              ? filteredHistory
+              : partnerships
+        }
         keyExtractor={(item, index) =>
           (item.studentId || item.id || index).toString() + "-" + index
         }
-        renderItem={({ item, index }) => (
-          activeTab === "redeem" ? (
-            <ChildInfoCard student={item} />
-          ) : (
-            <FadeInView
-              from={{ opacity: 0, translateY: 8 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: "timing", duration: 260, delay: index * 50 }}
-            >
-              <RewardHistoryCard
-                item={item}
-                onCancel={() => handleCancel(item)}
-                onConfirm={() => handleConfirm(item)}
-              />
-            </FadeInView>
-          )
-        )}
+        renderItem={({ item, index }) => {
+          if (activeTab === "redeem") {
+            return <ChildInfoCard student={item} />;
+          } else if (activeTab === "history") {
+            return (
+              <FadeInView
+                from={{ opacity: 0, translateY: 8 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{
+                  type: "timing",
+                  duration: 260,
+                  delay: index * 50,
+                }}
+              >
+                <RewardHistoryCard
+                  item={item}
+                  onCancel={() => handleCancel(item)}
+                  onConfirm={() => handleConfirm(item)}
+                />
+              </FadeInView>
+            );
+          } else {
+            return (
+              <FadeInView
+                from={{ opacity: 0, translateY: 8 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{
+                  type: "timing",
+                  duration: 260,
+                  delay: index * 50,
+                }}
+              >
+                <PartnershipRewardCard
+                  item={item}
+                  onConfirm={(id) => handleConfirmPartnership(id)}
+                />
+              </FadeInView>
+            );
+          }
+        }}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
             <History size={40} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>
-              {filterStatus === "ALL"
-                ? "Chưa có lịch sử đổi quà"
-                : `Không có yêu cầu "${FILTER_STATUSES.find((f) => f.value === filterStatus)?.label}"`}
+              {activeTab === "redeem"
+                ? "Chưa có dữ liệu học sinh"
+                : activeTab === "history"
+                  ? filterStatus === "ALL"
+                    ? "Chưa có lịch sử đổi quà"
+                    : `Không có yêu cầu "${FILTER_STATUSES.find((f) => f.value === filterStatus)?.label}"`
+                  : "Chưa có phần quà từ chiến dịch"}
             </Text>
           </View>
         )}
@@ -709,6 +902,22 @@ const styles = StyleSheet.create({
   cancelBtnText: { color: "#EF4444", fontSize: 12, fontWeight: "700" },
   confirmBtn: { backgroundColor: "#059669" },
   confirmBtnText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
+
+  trackingInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  trackingText: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
 
   // Empty
   emptyState: { alignItems: "center", marginTop: 80, gap: 10 },

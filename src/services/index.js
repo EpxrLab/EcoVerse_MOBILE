@@ -65,6 +65,24 @@ const confirmRequest = async (id) => {
   }
 };
 
+const getMyPartnershipDeliveries = async () => {
+  try {
+    const res = await axios.get("/rewards/deliveries/my");
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const confirmPartnershipDelivery = async (id) => {
+  try {
+    const res = await axios.put(`/rewards/deliveries/${id}/confirm`);
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 //======================Campaign API===================
 
 const getAllCamapaignInvitations = async () => {
@@ -160,7 +178,7 @@ const verifyResetPassword = async (payload) => {
 
 const changePassword = async (payload) => {
   try {
-    const res = await axios.post("/auth/change-password", payload);
+    const res = await axios.put("/auth/change-password", payload);
     return res.data;
   } catch (error) {
     console.log(error);
@@ -176,6 +194,8 @@ export {
   getMyRequests,
   cancelRequest,
   confirmRequest,
+  getMyPartnershipDeliveries,
+  confirmPartnershipDelivery,
   getAllCamapaignInvitations,
   approveInvitation,
   rejectInvitation,

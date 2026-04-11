@@ -55,11 +55,11 @@ export default function ChangePassword() {
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       Toast.show({
         type: "error",
         text1: "Mật khẩu quá ngắn",
-        text2: "Mật khẩu mới phải từ 6 ký tự",
+        text2: "Mật khẩu mới phải từ 8 ký tự",
       });
       return;
     }
