@@ -85,9 +85,9 @@ const confirmPartnershipDelivery = async (id) => {
 
 //======================Campaign API===================
 
-const getAllCamapaignInvitations = async () => {
+const getAllCamapaignInvitations = async (params) => {
   try {
-    const res = await axios.get("/parent/campaign-invitations");
+    const res = await axios.get("/parent/campaign-invitations", { params });
     return res.data;
   } catch (error) {
     console.log(error);
