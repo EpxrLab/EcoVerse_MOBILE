@@ -133,6 +133,7 @@ export default function ParentAuth() {
       showToast("Chào mừng trở lại! 🌿", "success");
       await AsyncStorage.setItem("accessToken", res?.data?.accessToken);
       await AsyncStorage.setItem("refreshToken", res?.data?.refreshToken);
+      console.log("token:", res?.data?.accessToken);
       navigation.navigate("ParentHome");
     } else {
       showToast("Email hoặc mật khẩu không đúng", "error");

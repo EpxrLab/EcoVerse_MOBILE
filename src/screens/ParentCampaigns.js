@@ -67,18 +67,6 @@ const STATUS_CONFIG = {
     bg: "#FEF2F2",
     icon: XCircle,
   },
-  PENDING: {
-    label: "Chờ xác nhận",
-    color: "#EA580C",
-    bg: "#FFF7ED",
-    icon: Clock,
-  },
-  PREPARED: {
-    label: "Chờ xác nhận",
-    color: "#EA580C",
-    bg: "#FFF7ED",
-    icon: Clock,
-  },
 };
 
 // ─── Invitation Card ──────────────────────────────────────────────────────────
@@ -129,9 +117,7 @@ function InvitationCard({ item, onPress, onAccept, onRejectPress }) {
           </View>
 
           {/* Action buttons — only for INVITED, PENDING or PREPARED */}
-          {(item.parentApprovalStatus === "INVITED" ||
-            item.parentApprovalStatus === "PENDING" ||
-            item.parentApprovalStatus === "PREPARED") && (
+          {item.parentApprovalStatus === "INVITED" && (
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.acceptBtn}
@@ -352,9 +338,7 @@ function DetailModal({
 
           {/* Footer */}
           <View style={styles.detailFooter}>
-            {invitation.parentApprovalStatus === "INVITED" ||
-            invitation.parentApprovalStatus === "PENDING" ||
-            invitation.parentApprovalStatus === "PREPARED" ? (
+            {invitation.parentApprovalStatus === "INVITED" ? (
               <View style={styles.footerBtns}>
                 <TouchableOpacity
                   style={styles.modalRejectBtn}
@@ -410,8 +394,19 @@ export default function ParentCampaigns() {
 
   const fetchData = async () => {
     try {
-      const res = await getAllCamapaignInvitations();
-      setInvitations(res.data);
+      const [invitedRes, approvedRes, rejectedRes] = await Promise.all([
+        getAllCamapaignInvitations({ status: "INVITED" }),
+        getAllCamapaignInvitations({ status: "APPROVED" }),
+        getAllCamapaignInvitations({ status: "REJECTED" }),
+      ]);
+
+      const allInvitations = [
+        ...(invitedRes?.data || []),
+        ...(approvedRes?.data || []),
+        ...(rejectedRes?.data || []),
+      ];
+
+      setInvitations(allInvitations);
     } catch (error) {
       console.log(error);
     }
@@ -422,16 +417,10 @@ export default function ParentCampaigns() {
   }, []);
 
   const pendingList = invitations.filter(
-    (i) =>
-      i.parentApprovalStatus === "INVITED" ||
-      i.parentApprovalStatus === "PENDING" ||
-      i.parentApprovalStatus === "PREPARED",
+    (i) => i.parentApprovalStatus === "INVITED",
   );
   const respondedList = invitations.filter(
-    (i) =>
-      i.parentApprovalStatus !== "INVITED" &&
-      i.parentApprovalStatus !== "PENDING" &&
-      i.parentApprovalStatus !== "PREPARED",
+    (i) => i.parentApprovalStatus === "APPROVED" || i.parentApprovalStatus === "REJECTED",
   );
   const filteredResponded =
     dropValue === "ALL"
@@ -445,7 +434,7 @@ export default function ParentCampaigns() {
       const payload = {
         studentId: item.studentId,
       };
-      const res = await approveInvitation(item.id, payload);
+      const res = await approveInvitation(item.campaignId, payload);
 
       if (res) {
         Toast.show({
@@ -479,7 +468,7 @@ export default function ParentCampaigns() {
         studentId: item.studentId,
         reason: reason,
       };
-      const res = await rejectInvitation(item.id, payload);
+      const res = await rejectInvitation(item.campaignId, payload);
       if (res) {
         Toast.show({
           type: "success",
@@ -513,7 +502,7 @@ export default function ParentCampaigns() {
       <FlatList
         data={currentList}
         keyExtractor={(item, index) =>
-          item.id ? `${item.id}-${index}` : `inv-${index}`
+          item.campaignId ? `${item.campaignId}-${index}` : `inv-${index}`
         }
         renderItem={({ item, index }) => (
           <FadeInView
