@@ -49,7 +49,9 @@ export const NotificationProvider = ({ children }) => {
   // If BACKEND_URL is https://api.ecoverse-system.io.vn/api
   // WS URL should be ws://api.ecoverse-system.io.vn/ws (or wss if using https)
   const getWsUrl = () => {
-    let url = BACKEND_URL.replace("/api", "/ws");
+    // Replace only the '/api' at the end of the URL (path), not in the subdomain
+    // Append /websocket for direct STOMP connections to Spring Boot SockJS endpoints
+    let url = BACKEND_URL.replace(/\/api$/, "/ws/websocket");
     if (url.startsWith("https")) {
       return url.replace("https", "wss");
     } else if (url.startsWith("http")) {
@@ -60,18 +62,27 @@ export const NotificationProvider = ({ children }) => {
 
   const fetchInitialData = async () => {
     try {
-      const [list, count] = await Promise.all([
+      const [listRes, countRes] = await Promise.all([
         getNotifications(),
         getUnreadCount()
       ]);
-      if (list) setNotifications(list);
-      if (count !== undefined) setUnreadCount(count);
+      if (listRes && listRes.data && listRes.data.content) {
+        setNotifications(listRes.data.content);
+      }
+      if (countRes && countRes.data && countRes.data.unreadCount !== undefined) {
+        setUnreadCount(countRes.data.unreadCount);
+      }
     } catch (error) {
       console.error("Error fetching initial notifications:", error);
     }
   };
 
   const connectWebSocket = async () => {
+    // Close existing connection if any
+    if (stompClientRef.current) {
+      stompClientRef.current.deactivate();
+    }
+
     const token = await AsyncStorage.getItem("accessToken");
     if (!token) {
       console.log("No token found, skipping WebSocket connection");
@@ -96,9 +107,11 @@ export const NotificationProvider = ({ children }) => {
         // Subscribe to user-specific notifications
         // The backend uses /user destination prefix
         client.subscribe("/user/queue/notifications", async (message) => {
-          const newNotification = JSON.parse(message.body);
+          const incomingData = JSON.parse(message.body);
+          // Backend might send the whole object or just the notification
+          const newNotification = incomingData.data || incomingData;
           console.log("New notification received:", newNotification);
-          
+
           setNotifications((prev) => [newNotification, ...prev]);
           setUnreadCount((prev) => prev + 1);
 
@@ -155,6 +168,7 @@ export const NotificationProvider = ({ children }) => {
 
   const refreshNotifications = () => {
     fetchInitialData();
+    connectWebSocket(); // Re-connect to pick up potentially new token
   };
 
   const value = {

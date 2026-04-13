@@ -2,9 +2,13 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bell, Leaf } from "lucide-react-native";
+import { useNotifications } from "../context/NotificationContext";
+import { useNavigation } from "@react-navigation/native";
 
 export function MobileHeader({ title }) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const { unreadCount } = useNotifications();
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
@@ -19,9 +23,21 @@ export function MobileHeader({ title }) {
 
         {/* Right: Bell + Avatar */}
         <View style={styles.right}>
-          <TouchableOpacity style={styles.bellButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.bellButton}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate("ParentNotifications")}
+          >
             <Bell size={20} color="#6B7280" />
-            <View style={styles.badgeDot} />
+            {unreadCount > 0 && (
+              <View style={styles.badgeDot}>
+                {unreadCount < 100 ? (
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                ) : (
+                  <Text style={styles.badgeText}>99+</Text>
+                )}
+              </View>
+            )}
           </TouchableOpacity>
 
           <View style={styles.avatar}>
@@ -77,12 +93,22 @@ const styles = StyleSheet.create({
   },
   badgeDot: {
     position: "absolute",
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: -2,
+    right: -2,
     backgroundColor: "#EF4444",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
   },
   avatar: {
     width: 32,
