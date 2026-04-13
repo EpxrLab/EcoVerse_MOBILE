@@ -18,14 +18,9 @@ import ParentChildDetail from "./screens/ParentChildDetail";
 import ParentProfile from "./screens/ParentProfile";
 import { ParentAllRewards } from "./screens/ParentAllRewards";
 import ChangePassword from "./screens/ChangePassword";
+import ParentNotifications from "./screens/ParentNotifications";
 import Toast from "react-native-toast-message";
 import { NotificationProvider } from "./context/NotificationContext";
-
-const PlaceholderScreen = ({ route }) => (
-  <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-    <Text style={{ fontSize: 16, color: "#6B7280" }}>{route.name}</Text>
-  </View>
-);
 
 const Tab = createBottomTabNavigator();
 
@@ -128,6 +123,7 @@ export default function App() {
             <Stack.Screen name="ParentProfile" component={ParentProfile} />
             <Stack.Screen name="ParentAllRewards" component={ParentAllRewards} />
             <Stack.Screen name="ChangePassword" component={ChangePassword} />
+            <Stack.Screen name="ParentNotifications" component={ParentNotifications} />
           </Stack.Navigator>
         </NavigationContainer>
       </NotificationProvider>
