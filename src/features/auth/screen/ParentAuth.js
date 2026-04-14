@@ -18,6 +18,7 @@ import { FadeInView } from "../../../components/FadeInView";
 import { User, Lock, Eye, EyeOff } from "lucide-react-native";
 import { loginFunction } from "../services";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNotifications } from "../../../context/NotificationContext";
 
 const { height } = Dimensions.get("window");
 
@@ -93,6 +94,7 @@ function Toast({ message, type, visible }) {
 export default function ParentAuth() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { refreshNotifications } = useNotifications();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -133,6 +135,8 @@ export default function ParentAuth() {
       showToast("Chào mừng trở lại! 🌿", "success");
       await AsyncStorage.setItem("accessToken", res?.data?.accessToken);
       await AsyncStorage.setItem("refreshToken", res?.data?.refreshToken);
+      console.log("token:", res?.data?.accessToken);
+      refreshNotifications();
       navigation.navigate("ParentHome");
     } else {
       showToast("Email hoặc mật khẩu không đúng", "error");

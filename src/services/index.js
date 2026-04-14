@@ -85,9 +85,9 @@ const confirmPartnershipDelivery = async (id) => {
 
 //======================Campaign API===================
 
-const getAllCamapaignInvitations = async () => {
+const getAllCamapaignInvitations = async (params) => {
   try {
-    const res = await axios.get("/parent/campaign-invitations");
+    const res = await axios.get("/parent/campaign-invitations", { params });
     return res.data;
   } catch (error) {
     console.log(error);
@@ -139,7 +139,7 @@ const getUnreadCount = async () => {
 
 const markAsRead = async (id) => {
   try {
-    const res = await axios.post(`/notifications/${id}/read`);
+    const res = await axios.patch(`/notifications/${id}/read`);
     return res.data;
   } catch (error) {
     console.log(error);
@@ -148,7 +148,7 @@ const markAsRead = async (id) => {
 
 const markAllAsRead = async () => {
   try {
-    const res = await axios.post("/notifications/read-all");
+    const res = await axios.patch("/notifications/read-all");
     return res.data;
   } catch (error) {
     console.log(error);
