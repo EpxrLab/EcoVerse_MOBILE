@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import {
   Filter,
   Info,
 } from "lucide-react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { MobileHeader } from "../components/MobileHeader";
 import DropDownPicker from "react-native-dropdown-picker";
 import {
@@ -412,9 +413,11 @@ export default function ParentCampaigns() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const pendingList = invitations.filter(
     (i) => i.parentApprovalStatus === "INVITED",

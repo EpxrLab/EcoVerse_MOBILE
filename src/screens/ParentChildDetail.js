@@ -17,7 +17,6 @@ import {
   Coins,
   Target,
   Flame,
-  Trophy,
   Medal,
   Gift,
   CheckCircle,
@@ -26,7 +25,6 @@ import {
   Clock,
   XCircle,
 } from "lucide-react-native";
-import { ActivityItem } from "../components/ActivityItem";
 import {
   confirmRequest,
   getMyRequests,
@@ -34,49 +32,6 @@ import {
 } from "../services";
 
 const { width } = Dimensions.get("window");
-
-const MOCK_ACTIVITIES = [
-  {
-    id: "a1",
-    type: "game",
-    title: "Phân loại rác thải",
-    description: "Hoàn thành màn 3 - Tái chế nhựa",
-    coins_earned: 20,
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-  {
-    id: "a2",
-    type: "quiz",
-    title: "Kiểm tra kiến thức môi trường",
-    description: "8/10 câu đúng",
-    coins_earned: 15,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-  },
-  {
-    id: "a3",
-    type: "reward",
-    title: "Đổi quà: Bút màu sinh thái",
-    description: "Đã đổi thành công",
-    coins_earned: -50,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-  {
-    id: "a4",
-    type: "game",
-    title: "Trồng cây xanh",
-    description: "Hoàn thành thử thách hàng ngày",
-    coins_earned: 10,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-  },
-  {
-    id: "a5",
-    type: "quiz",
-    title: "Quiz: Tiết kiệm nước",
-    description: "10/10 câu đúng - Hoàn hảo!",
-    coins_earned: 25,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-  },
-];
 
 // INITIAL_REWARDS moved to state
 
@@ -419,23 +374,6 @@ export default function ParentChildDetail() {
           </View>
         </FadeInView>
 
-        {/* ── Recent activities ── */}
-        <FadeInView
-          from={{ opacity: 0, translateY: 12 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: "timing", duration: 350, delay: 400 }}
-        >
-          <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>
-            Hoạt động gần đây
-          </Text>
-          {MOCK_ACTIVITIES.length === 0 ? (
-            <Text style={styles.emptyText}>Chưa có hoạt động nào</Text>
-          ) : (
-            MOCK_ACTIVITIES.slice(0, 10).map((activity) => (
-              <ActivityItem key={activity.id} activity={activity} />
-            ))
-          )}
-        </FadeInView>
       </ScrollView>
 
       {/* Redeem modal removed */}

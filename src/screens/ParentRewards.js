@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import {
   Flag,
 } from "lucide-react-native";
 import { MobileHeader } from "../components/MobileHeader";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import DropDownPicker from "react-native-dropdown-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -285,7 +285,7 @@ function ChildInfoCard({ student }) {
   const isMale = student.gender === "MALE";
 
   const handleNavigate = async () => {
-    navigation.navigate("ParentAllRewards");
+    navigation.navigate("ParentAllRewards", { student });
     await AsyncStorage.setItem("studentId", student.studentId);
   };
 
@@ -401,9 +401,11 @@ export default function ParentRewards() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const handleCancel = async (reward) => {
     try {
