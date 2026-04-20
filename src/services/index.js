@@ -118,6 +118,15 @@ const rejectInvitation = async (id, payload) => {
   }
 };
 
+const getCampaignLeaderboard = async (campaignId) => {
+  try {
+    const res = await axios.get(`/campaigns/${campaignId}/leaderboard`);
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 //======================Notification API================
 const getNotifications = async () => {
   try {
@@ -206,4 +215,5 @@ export {
   forgotPassword,
   verifyResetPassword,
   changePassword,
+  getCampaignLeaderboard,
 };
