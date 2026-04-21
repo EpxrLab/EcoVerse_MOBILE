@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -24,12 +24,13 @@ import {
   Filter,
   Info,
 } from "lucide-react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { MobileHeader } from "../components/MobileHeader";
 import DropDownPicker from "react-native-dropdown-picker";
 import {
   approveInvitation,
   getAllCamapaignInvitations,
+  getCampaignInvitationHistory,
   rejectInvitation,
 } from "../services";
 import Toast from "react-native-toast-message";
@@ -395,16 +396,14 @@ export default function ParentCampaigns() {
 
   const fetchData = async () => {
     try {
-      const [invitedRes, approvedRes, rejectedRes] = await Promise.all([
+      const [invitedRes, historyRes] = await Promise.all([
         getAllCamapaignInvitations({ status: "INVITED" }),
-        getAllCamapaignInvitations({ status: "APPROVED" }),
-        getAllCamapaignInvitations({ status: "REJECTED" }),
+        getCampaignInvitationHistory(),
       ]);
 
       const allInvitations = [
         ...(invitedRes?.data || []),
-        ...(approvedRes?.data || []),
-        ...(rejectedRes?.data || []),
+        ...(historyRes?.data || []),
       ];
 
       setInvitations(allInvitations);

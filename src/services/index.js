@@ -118,6 +118,15 @@ const rejectInvitation = async (id, payload) => {
   }
 };
 
+const getCampaignInvitationHistory = async () => {
+  try {
+    const res = await axios.get("/parent/campaign-invitations/history");
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const getCampaignLeaderboard = async (campaignId) => {
   try {
     const res = await axios.get(`/campaigns/${campaignId}/leaderboard`);
@@ -216,4 +225,5 @@ export {
   verifyResetPassword,
   changePassword,
   getCampaignLeaderboard,
+  getCampaignInvitationHistory,
 };
