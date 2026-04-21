@@ -49,7 +49,7 @@ const isExpiringSoon = (iso) => {
 };
 
 const STATUS_CONFIG = {
-  PENDING_PARENT_APPROVAL: {
+  INVITED: {
     label: "Chờ xác nhận",
     color: "#EA580C",
     bg: "#FFF7ED",
@@ -420,7 +420,9 @@ export default function ParentCampaigns() {
     (i) => i.parentApprovalStatus === "INVITED",
   );
   const respondedList = invitations.filter(
-    (i) => i.parentApprovalStatus === "APPROVED" || i.parentApprovalStatus === "REJECTED",
+    (i) =>
+      i.parentApprovalStatus === "APPROVED" ||
+      i.parentApprovalStatus === "REJECTED",
   );
   const filteredResponded =
     dropValue === "ALL"
