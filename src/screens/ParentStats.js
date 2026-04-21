@@ -14,7 +14,7 @@ import { MobileHeader } from "../components/MobileHeader";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   getParentChildren,
-  getAllCamapaignInvitations,
+  getCampaignInvitationHistory,
   getCampaignLeaderboard,
 } from "../services";
 
@@ -97,8 +97,6 @@ function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ParentStats() {
-  const [activeTab, setActiveTab] = useState("school"); // Using tabs as filters if applicable
-
   // Children state
   const [children, setChildren] = useState([]);
   const [childOpen, setChildOpen] = useState(false);
@@ -125,8 +123,10 @@ export default function ParentStats() {
         }
       }
 
-      const campaignRes = await getAllCamapaignInvitations({ status: "APPROVED" });
+      const campaignRes = await getCampaignInvitationHistory();
       if (campaignRes?.data) {
+        // We might want to see both approved and rejected in history, 
+        // but for leaderboard, only approved campaigns usually have data.
         setCampaigns(campaignRes.data);
       }
     } catch (error) {
@@ -142,8 +142,11 @@ export default function ParentStats() {
     }, [])
   );
 
-  // Filter campaigns for the selected child
-  const childCampaigns = campaigns.filter(c => c.studentId === selectedChildId);
+  // Filter campaigns for the selected child. 
+  // For Leaderboard, we typically only care about campaigns the child actually joined (APPROVED).
+  const childCampaigns = campaigns.filter(
+    (c) => c.studentId === selectedChildId && c.parentApprovalStatus === "APPROVED"
+  );
 
   // When selected child changes, auto-select first campaign
   useEffect(() => {
@@ -178,7 +181,7 @@ export default function ParentStats() {
   }, [selectedCampaignId]);
 
   const childItems = children.map((c) => ({
-    label: `${c.fullName}`,
+    label: c.studentFullName || c.fullName || c.studentName || "Học sinh",
     value: c.studentId,
   }));
 
@@ -192,7 +195,7 @@ export default function ParentStats() {
 
   const isMyChild = (item) => item.studentId === selectedChildId;
 
-  const accentColor = activeTab === "school" ? "#059669" : "#7C3AED";
+  const accentColor = "#059669";
 
   return (
     <View style={styles.screen}>
@@ -230,49 +233,6 @@ export default function ParentStats() {
           />
         </View>
 
-        {/* Tab bar - Keeping visual consistence with previous UI */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "school" && styles.tabActive]}
-            onPress={() => setActiveTab("school")}
-            activeOpacity={0.8}
-          >
-            <Leaf
-              size={14}
-              color={activeTab === "school" ? "#2563EB" : "#9CA3AF"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "school" && styles.tabTextActiveBlue,
-              ]}
-            >
-              Trường Học
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === "partnership" && styles.tabActive,
-            ]}
-            onPress={() => setActiveTab("partnership")}
-            activeOpacity={0.8}
-          >
-            <Cloud
-              size={14}
-              color={activeTab === "partnership" ? "#7C3AED" : "#9CA3AF"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "partnership" && styles.tabTextActivePurple,
-              ]}
-            >
-              Đối Tác
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         {loading ? (
           <ActivityIndicator size="large" color="#059669" style={{ marginTop: 40 }} />
@@ -326,11 +286,7 @@ export default function ParentStats() {
                   <View
                     style={[styles.infoIconBox, { backgroundColor: accentColor + "15" }]}
                   >
-                    {activeTab === "school" ? (
-                      <Leaf size={18} color={accentColor} />
-                    ) : (
-                      <Cloud size={18} color={accentColor} />
-                    )}
+                    <Leaf size={18} color={accentColor} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.infoTitle, { color: accentColor }]}>
@@ -354,7 +310,7 @@ export default function ParentStats() {
                           item={item}
                           isMyChild={isMyChild(item)}
                           accentColor={accentColor}
-                          showSchool={activeTab === "partnership"}
+                          showSchool={true}
                         />
                       ))
                     ) : (
