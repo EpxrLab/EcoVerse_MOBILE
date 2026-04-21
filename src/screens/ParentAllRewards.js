@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,11 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+} from "@react-navigation/native";
 import { FadeInView } from "../components/FadeInView";
 import {
   ArrowLeft,
@@ -55,14 +59,17 @@ const TABS = [
 const TYPE_EMOJI = { PHYSICAL: "🎁", VOUCHER: "🎫" };
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
-function RewardDetailModal({ reward, visible, onClose, tabColor }) {
+function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
   if (!reward) return null;
   const navigation = useNavigation();
   const [quantity, setQuantity] = useState(1);
 
   const outOfStock = !reward.isUnlimited && reward.stockQuantity === 0;
   const inactive = !reward.isActive;
-  const isDisable = outOfStock || inactive;
+  const notEnoughCoins = student
+    ? student.totalCoin < reward.coinCost * quantity
+    : false;
+  const isDisable = outOfStock || inactive || notEnoughCoins;
 
   // Reset quantity when modal opens/changes reward
   useEffect(() => {
@@ -151,10 +158,13 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
             <View
               style={[
                 styles.detailStatusBadge,
-                { backgroundColor: !isDisable ? "#ECFDF5" : "#FEF2F2" },
+                {
+                  backgroundColor:
+                    outOfStock || inactive ? "#FEF2F2" : "#ECFDF5",
+                },
               ]}
             >
-              {!isDisable ? (
+              {!(outOfStock || inactive) ? (
                 <CheckCircle size={12} color="#059669" />
               ) : (
                 <XCircle size={12} color="#DC2626" />
@@ -162,7 +172,7 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
               <Text
                 style={[
                   styles.detailStatusText,
-                  { color: !isDisable ? "#059669" : "#DC2626" },
+                  { color: !(outOfStock || inactive) ? "#059669" : "#DC2626" },
                 ]}
               >
                 {inactive
@@ -170,6 +180,17 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
                   : outOfStock
                     ? "Hết hàng"
                     : "Còn hàng"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Student Balance Info (NEW) */}
+          <View style={styles.balanceInfo}>
+            <Text style={styles.balanceLabel}>Số dư của bé:</Text>
+            <View style={styles.balanceRow}>
+              <Coins size={14} color="#D97706" />
+              <Text style={styles.balanceValue}>
+                {student?.totalCoin || 0} xu
               </Text>
             </View>
           </View>
@@ -193,7 +214,10 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
                   ]}
                   disabled={quantity <= 1}
                 >
-                  <Minus size={16} color={quantity <= 1 ? "#D1D5DB" : "#374151"} />
+                  <Minus
+                    size={16}
+                    color={quantity <= 1 ? "#D1D5DB" : "#374151"}
+                  />
                 </TouchableOpacity>
                 <View style={styles.qtyBox}>
                   <Text style={styles.qtyText}>{quantity}</Text>
@@ -206,9 +230,18 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
                       quantity >= reward.stockQuantity &&
                       styles.qtyBtnDisabled,
                   ]}
-                  disabled={!reward.isUnlimited && quantity >= reward.stockQuantity}
+                  disabled={
+                    !reward.isUnlimited && quantity >= reward.stockQuantity
+                  }
                 >
-                  <Plus size={16} color={(!reward.isUnlimited && quantity >= reward.stockQuantity) ? "#D1D5DB" : "#374151"} />
+                  <Plus
+                    size={16}
+                    color={
+                      !reward.isUnlimited && quantity >= reward.stockQuantity
+                        ? "#D1D5DB"
+                        : "#374151"
+                    }
+                  />
                 </TouchableOpacity>
               </View>
             )}
@@ -243,9 +276,24 @@ function RewardDetailModal({ reward, visible, onClose, tabColor }) {
             disabled={isDisable}
             activeOpacity={0.8}
           >
-            <Gift size={18} color="#FFFFFF" />
-            <Text style={styles.redeemSubmitText}>
-              {isDisable ? "Không thể đổi quà" : "Đổi quà ngay"}
+            {isDisable ? (
+              <XCircle size={18} color="#9CA3AF" />
+            ) : (
+              <Gift size={18} color="#FFFFFF" />
+            )}
+            <Text
+              style={[
+                styles.redeemSubmitText,
+                isDisable && { color: "#9CA3AF" },
+              ]}
+            >
+              {inactive
+                ? "Ngưng hoạt động"
+                : outOfStock
+                  ? "Hết hàng"
+                  : notEnoughCoins
+                    ? "Không đủ xu"
+                    : "Đổi quà ngay"}
             </Text>
           </TouchableOpacity>
 
@@ -333,7 +381,10 @@ function RewardCard({ reward, tab, onPress, delay }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export function ParentAllRewards() {
   const navigation = useNavigation();
+  const route = useRoute();
   const insets = useSafeAreaInsets();
+
+  const student = route.params?.student;
 
   const [activeTab, setActiveTab] = useState("PHYSICAL");
   const [rewards, setRewards] = useState([]);
@@ -352,9 +403,11 @@ export function ParentAllRewards() {
   };
   console.log(rewards);
 
-  useEffect(() => {
-    fetchRewards();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchRewards();
+    }, []),
+  );
 
   const currentTab = TABS.find((t) => t.key === activeTab);
   const filtered = rewards.filter((r) => r.rewardType === activeTab);
@@ -436,58 +489,58 @@ export function ParentAllRewards() {
           <Text style={styles.loadingText}>Đang tải phần thưởng...</Text>
         </View>
       ) : (
-      <FlatList
-        data={filtered}
-        numColumns={2}
-        key={activeTab}
-        keyExtractor={(item, index) =>
-          item.id ? `${item.id}-${index}` : `allreward-${index}`
-        }
-        columnWrapperStyle={filtered.length > 0 ? styles.cardGrid : null}
-        ListHeaderComponent={() => (
-          <FadeInView
-            key={activeTab + "_banner"}
-            from={{ opacity: 0, translateY: -6 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "timing", duration: 250 }}
-            style={[
-              styles.banner,
-              {
-                backgroundColor: currentTab?.bg,
-                borderColor: currentTab?.color + "30",
-              },
-            ]}
-          >
-            <currentTab.icon size={18} color={currentTab?.color} />
-            <Text style={[styles.bannerText, { color: currentTab?.color }]}>
-              {activeTab === "PHYSICAL" &&
-                "Quà tặng hiện vật — giao tận trường cho bé"}
-              {activeTab === "VOUCHER" &&
-                "Voucher & ưu đãi — dùng mua sắm & giải trí"}
-            </Text>
-          </FadeInView>
-        )}
-        renderItem={({ item, index }) => (
-          <RewardCard
-            reward={item}
-            tab={currentTab}
-            onPress={handlePressCard}
-            delay={index * 55}
-          />
-        )}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyState}>
-            <Text style={{ fontSize: 40 }}>{TYPE_EMOJI[activeTab]}</Text>
-            <Text style={styles.emptyTitle}>Chưa có phần thưởng</Text>
-            <Text style={styles.emptyDesc}>
-              Danh mục này chưa có phần thưởng nào
-            </Text>
-          </View>
-        )}
-        style={styles.scroll}
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-      />
+        <FlatList
+          data={filtered}
+          numColumns={2}
+          key={activeTab}
+          keyExtractor={(item, index) =>
+            item.id ? `${item.id}-${index}` : `allreward-${index}`
+          }
+          columnWrapperStyle={filtered.length > 0 ? styles.cardGrid : null}
+          ListHeaderComponent={() => (
+            <FadeInView
+              key={activeTab + "_banner"}
+              from={{ opacity: 0, translateY: -6 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 250 }}
+              style={[
+                styles.banner,
+                {
+                  backgroundColor: currentTab.bg,
+                  borderColor: currentTab.color + "30",
+                },
+              ]}
+            >
+              <currentTab.icon size={18} color={currentTab.color} />
+              <Text style={[styles.bannerText, { color: currentTab.color }]}>
+                {activeTab === "PHYSICAL" &&
+                  "Quà tặng hiện vật — giao tận trường cho bé"}
+                {activeTab === "VOUCHER" &&
+                  "Voucher & ưu đãi — dùng mua sắm & giải trí"}
+              </Text>
+            </FadeInView>
+          )}
+          renderItem={({ item, index }) => (
+            <RewardCard
+              reward={item}
+              tab={currentTab}
+              onPress={handlePressCard}
+              delay={index * 55}
+            />
+          )}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyState}>
+              <Text style={{ fontSize: 40 }}>{TYPE_EMOJI[activeTab]}</Text>
+              <Text style={styles.emptyTitle}>Chưa có phần thưởng</Text>
+              <Text style={styles.emptyDesc}>
+                Danh mục này chưa có phần thưởng nào
+              </Text>
+            </View>
+          )}
+          style={styles.scroll}
+          contentContainerStyle={styles.grid}
+          showsVerticalScrollIndicator={false}
+        />
       )}
 
       {/* ── Detail Modal ── */}
@@ -496,6 +549,7 @@ export function ParentAllRewards() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         tabColor={currentTab?.color || "#059669"}
+        student={student}
       />
     </View>
   );
@@ -504,6 +558,21 @@ export function ParentAllRewards() {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F9FAFB" },
+
+  balanceInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  balanceLabel: { fontSize: 13, color: "#64748B", fontWeight: "500" },
+  balanceRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  balanceValue: { fontSize: 15, fontWeight: "700", color: "#475569" },
 
   // Header
   header: {

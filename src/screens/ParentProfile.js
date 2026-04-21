@@ -19,7 +19,6 @@ import {
   School,
   BookOpen,
   Hash,
-  ChevronRight,
   Star,
 } from "lucide-react-native";
 import { getAuthenticatedParent } from "../services";
@@ -265,17 +264,6 @@ export default function ParentProfile() {
             )}
           </FadeInView>
 
-          {/* Edit profile button */}
-          <FadeInView
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ type: "timing", duration: 300, delay: 520 }}
-          >
-            <TouchableOpacity style={styles.editBtn} activeOpacity={0.85}>
-              <Text style={styles.editBtnText}>Chỉnh sửa thông tin</Text>
-              <ChevronRight size={16} color="#059669" />
-            </TouchableOpacity>
-          </FadeInView>
         </ScrollView>
       )}
     </View>

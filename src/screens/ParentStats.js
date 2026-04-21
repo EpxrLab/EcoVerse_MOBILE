@@ -1,151 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { FadeInView } from "../components/FadeInView";
 import { Leaf, Cloud, Trophy } from "lucide-react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { MobileHeader } from "../components/MobileHeader";
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_CHILDREN = [
-  { id: "1", name: "Nguyễn Minh Anh", class_name: "4A" },
-  { id: "2", name: "Nguyễn Gia Bảo", class_name: "2B" },
-];
-
-const SCHOOL_CAMPAIGNS = [
-  {
-    id: "sc1",
-    name: "Tái chế Nhựa",
-    description: "Xếp hạng dựa trên độ chính xác phân loại rác",
-    data: [
-      { rank: 1, name: "Hoàng Anh", accuracy: 98, avatar: "🐶", class: "4A" },
-      { rank: 2, name: "Thúy Linh", accuracy: 96, avatar: "🐱", class: "4B" },
-      {
-        rank: 3,
-        name: "Nguyễn Minh Anh",
-        accuracy: 95,
-        avatar: "🦄",
-        class: "4A",
-      },
-      { rank: 4, name: "Minh Đức", accuracy: 92, avatar: "🐻", class: "4A" },
-      { rank: 5, name: "Thu Hà", accuracy: 89, avatar: "🐰", class: "4C" },
-      { rank: 6, name: "Gia Bảo", accuracy: 85, avatar: "🦁", class: "4B" },
-      { rank: 7, name: "Bảo Ngọc", accuracy: 82, avatar: "🦊", class: "4A" },
-    ],
-  },
-  {
-    id: "sc2",
-    name: "Tiết kiệm Điện",
-    description: "Xếp hạng dựa trên kiến thức tiết kiệm năng lượng",
-    data: [
-      { rank: 1, name: "Minh Đức", accuracy: 99, avatar: "🐻", class: "4A" },
-      {
-        rank: 2,
-        name: "Nguyễn Minh Anh",
-        accuracy: 97,
-        avatar: "🦄",
-        class: "4A",
-      },
-      { rank: 3, name: "Thu Hà", accuracy: 94, avatar: "🐰", class: "4C" },
-      { rank: 4, name: "Hoàng Anh", accuracy: 91, avatar: "🐶", class: "4A" },
-      { rank: 5, name: "Gia Bảo", accuracy: 88, avatar: "🦁", class: "4B" },
-    ],
-  },
-];
-
-const PARTNERSHIP_CAMPAIGNS = [
-  {
-    id: "pc1",
-    name: "Không khói bụi",
-    description: "Xếp hạng dựa trên độ chính xác thử thách không khí sạch",
-    data: [
-      {
-        rank: 1,
-        name: "Minh Đức",
-        accuracy: 94,
-        avatar: "🐻",
-        class: "4A",
-        school: "TH Lê Lợi",
-      },
-      {
-        rank: 2,
-        name: "Hoàng Anh",
-        accuracy: 91,
-        avatar: "🐶",
-        class: "4A",
-        school: "TH Lê Lợi",
-      },
-      {
-        rank: 3,
-        name: "Thu Hà",
-        accuracy: 88,
-        avatar: "🐰",
-        class: "4C",
-        school: "TH Nguyễn Du",
-      },
-      {
-        rank: 4,
-        name: "Nguyễn Minh Anh",
-        accuracy: 85,
-        avatar: "🦄",
-        class: "4A",
-        school: "TH Eco",
-      },
-      {
-        rank: 5,
-        name: "Thúy Linh",
-        accuracy: 80,
-        avatar: "🐱",
-        class: "4B",
-        school: "TH Kim Đồng",
-      },
-    ],
-  },
-  {
-    id: "pc2",
-    name: "Đại dương Xanh",
-    description: "Xếp hạng dựa trên hiểu biết về sinh vật biển",
-    data: [
-      {
-        rank: 1,
-        name: "Thu Hà",
-        accuracy: 96,
-        avatar: "🐰",
-        class: "4C",
-        school: "TH Nguyễn Du",
-      },
-      {
-        rank: 2,
-        name: "Nguyễn Minh Anh",
-        accuracy: 93,
-        avatar: "🦄",
-        class: "4A",
-        school: "TH Eco",
-      },
-      {
-        rank: 3,
-        name: "Minh Đức",
-        accuracy: 90,
-        avatar: "🐻",
-        class: "4A",
-        school: "TH Lê Lợi",
-      },
-      {
-        rank: 4,
-        name: "Gia Bảo",
-        accuracy: 87,
-        avatar: "🦁",
-        class: "4B",
-        school: "TH Kim Đồng",
-      },
-    ],
-  },
-];
+import { useFocusEffect } from "@react-navigation/native";
+import {
+  getParentChildren,
+  getCampaignInvitationHistory,
+  getCampaignLeaderboard,
+} from "../services";
 
 // ─── Rank Badge ───────────────────────────────────────────────────────────────
 function RankBadge({ rank }) {
@@ -174,7 +45,7 @@ function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
     <FadeInView
       from={{ opacity: 0, translateX: -8 }}
       animate={{ opacity: 1, translateX: 0 }}
-      transition={{ type: "timing", duration: 280, delay: item.rank * 50 }}
+      transition={{ type: "timing", duration: 280, delay: (item.rank || 0) * 50 }}
       style={[
         styles.leaderRow,
         isMyChild && {
@@ -187,7 +58,7 @@ function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
       <RankBadge rank={item.rank} />
 
       <View style={styles.avatarWrapper}>
-        <Text style={styles.avatarEmoji}>{item.avatar}</Text>
+        <Text style={styles.avatarEmoji}>{item.avatar || "👤"}</Text>
         {item.rank === 1 && <Text style={styles.crownEmoji}>👑</Text>}
       </View>
 
@@ -197,7 +68,7 @@ function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
             style={[styles.leaderName, isMyChild && { color: accentColor }]}
             numberOfLines={1}
           >
-            {item.name}
+            {item.studentName}
           </Text>
           {isMyChild && (
             <View
@@ -210,14 +81,13 @@ function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
           )}
         </View>
         <Text style={styles.leaderSub}>
-          Lớp {item.class}
-          {showSchool && item.school ? ` • ${item.school}` : ""}
+          {item.schoolName || "Trường học"}
         </Text>
       </View>
 
       <View style={styles.accuracyBox}>
         <Text style={[styles.accuracyVal, { color: accentColor }]}>
-          {item.accuracy}%
+          {item.combinedAccuracyPercentage || 0}%
         </Text>
         <Text style={styles.accuracyLabel}>Chính xác</Text>
       </View>
@@ -227,43 +97,105 @@ function LeaderRow({ item, isMyChild, accentColor, showSchool }) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ParentStats() {
-  const [activeTab, setActiveTab] = useState("school");
-
-  // Child picker
+  // Children state
+  const [children, setChildren] = useState([]);
   const [childOpen, setChildOpen] = useState(false);
-  const [selectedChildId, setSelectedChildId] = useState(MOCK_CHILDREN[0].id);
-  const childItems = MOCK_CHILDREN.map((c) => ({
-    label: `${c.name} (${c.class_name})`,
-    value: c.id,
+  const [selectedChildId, setSelectedChildId] = useState(null);
+
+  // Campaigns state
+  const [campaigns, setCampaigns] = useState([]);
+  const [campaignOpen, setCampaignOpen] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
+
+  // Leaderboard data
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const childRes = await getParentChildren();
+      if (childRes?.data) {
+        setChildren(childRes.data);
+        if (childRes.data.length > 0 && !selectedChildId) {
+          setSelectedChildId(childRes.data[0].studentId);
+        }
+      }
+
+      const campaignRes = await getCampaignInvitationHistory();
+      if (campaignRes?.data) {
+        // We might want to see both approved and rejected in history, 
+        // but for leaderboard, only approved campaigns usually have data.
+        setCampaigns(campaignRes.data);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
+
+  // Filter campaigns for the selected child. 
+  // For Leaderboard, we typically only care about campaigns the child actually joined (APPROVED).
+  const childCampaigns = campaigns.filter(
+    (c) => c.studentId === selectedChildId && c.parentApprovalStatus === "APPROVED"
+  );
+
+  // When selected child changes, auto-select first campaign
+  useEffect(() => {
+    if (childCampaigns.length > 0) {
+      if (!selectedCampaignId || !childCampaigns.find(c => c.campaignId === selectedCampaignId)) {
+        setSelectedCampaignId(childCampaigns[0].campaignId);
+      }
+    } else {
+      setSelectedCampaignId(null);
+      setLeaderboardData([]);
+    }
+  }, [selectedChildId, campaigns]);
+
+  // Fetch leaderboard when campaign changes
+  useEffect(() => {
+    if (selectedCampaignId) {
+      const fetchLeaderboard = async () => {
+        try {
+          setRefreshing(true);
+          const res = await getCampaignLeaderboard(selectedCampaignId);
+          if (res?.data) {
+            setLeaderboardData(res.data);
+          }
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setRefreshing(false);
+        }
+      };
+      fetchLeaderboard();
+    }
+  }, [selectedCampaignId]);
+
+  const childItems = children.map((c) => ({
+    label: c.studentFullName || c.fullName || c.studentName || "Học sinh",
+    value: c.studentId,
   }));
 
-  // School campaign picker
-  const [schoolOpen, setSchoolOpen] = useState(false);
-  const [selectedSchoolId, setSelectedSchoolId] = useState(
-    SCHOOL_CAMPAIGNS[0].id,
-  );
-  const schoolItems = SCHOOL_CAMPAIGNS.map((c) => ({
-    label: c.name,
-    value: c.id,
+  const campaignItems = childCampaigns.map((c) => ({
+    label: c.campaignName,
+    value: c.campaignId,
   }));
 
-  // Partnership campaign picker
-  const [partnerOpen, setPartnerOpen] = useState(false);
-  const [selectedPartnerId, setSelectedPartnerId] = useState(
-    PARTNERSHIP_CAMPAIGNS[0].id,
-  );
-  const partnerItems = PARTNERSHIP_CAMPAIGNS.map((c) => ({
-    label: c.name,
-    value: c.id,
-  }));
+  const selectedChild = children.find((c) => c.studentId === selectedChildId);
+  const currentCampaign = campaigns.find((c) => c.campaignId === selectedCampaignId);
 
-  const selectedChild = MOCK_CHILDREN.find((c) => c.id === selectedChildId);
-  const currentSchool = SCHOOL_CAMPAIGNS.find((c) => c.id === selectedSchoolId);
-  const currentPartner = PARTNERSHIP_CAMPAIGNS.find(
-    (c) => c.id === selectedPartnerId,
-  );
+  const isMyChild = (item) => item.studentId === selectedChildId;
 
-  const isMyChild = (item) => item.name === selectedChild?.name;
+  const accentColor = "#059669";
 
   return (
     <View style={styles.screen}>
@@ -276,7 +208,7 @@ export default function ParentStats() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Child selector */}
-        <View style={{ zIndex: 300 }}>
+        <View style={{ zIndex: 3000 }}>
           <Text style={styles.selectorLabel}>Xem xếp hạng của bé:</Text>
           <DropDownPicker
             open={childOpen}
@@ -284,10 +216,10 @@ export default function ParentStats() {
             items={childItems}
             setOpen={(v) => {
               setChildOpen(v);
-              setSchoolOpen(false);
-              setPartnerOpen(false);
+              setCampaignOpen(false);
             }}
             setValue={setSelectedChildId}
+            placeholder="Chọn học sinh"
             style={styles.picker}
             dropDownContainerStyle={styles.pickerDropdown}
             textStyle={styles.pickerText}
@@ -301,199 +233,101 @@ export default function ParentStats() {
           />
         </View>
 
-        {/* Tab bar */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "school" && styles.tabActive]}
-            onPress={() => setActiveTab("school")}
-            activeOpacity={0.8}
-          >
-            <Leaf
-              size={14}
-              color={activeTab === "school" ? "#2563EB" : "#9CA3AF"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "school" && styles.tabTextActiveBlue,
-              ]}
-            >
-              Trường Học
-            </Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === "partnership" && styles.tabActive,
-            ]}
-            onPress={() => setActiveTab("partnership")}
-            activeOpacity={0.8}
-          >
-            <Cloud
-              size={14}
-              color={activeTab === "partnership" ? "#7C3AED" : "#9CA3AF"}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "partnership" && styles.tabTextActivePurple,
-              ]}
-            >
-              Đối Tác
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── School Tab ── */}
-        {activeTab === "school" && (
+        {loading ? (
+          <ActivityIndicator size="large" color="#059669" style={{ marginTop: 40 }} />
+        ) : (
           <FadeInView
             from={{ opacity: 0, translateY: 10 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 280 }}
           >
             {/* Campaign picker */}
-            <View style={{ zIndex: 200, marginBottom: 12 }}>
+            <View style={{ zIndex: 2000, marginBottom: 12 }}>
               <DropDownPicker
-                open={schoolOpen}
-                value={selectedSchoolId}
-                items={schoolItems}
+                open={campaignOpen}
+                value={selectedCampaignId}
+                items={campaignItems}
                 setOpen={(v) => {
-                  setSchoolOpen(v);
+                  setCampaignOpen(v);
                   setChildOpen(false);
-                  setPartnerOpen(false);
                 }}
-                setValue={setSelectedSchoolId}
-                style={[styles.picker, { borderColor: "#BFDBFE" }]}
+                setValue={setSelectedCampaignId}
+                placeholder="Chọn chiến dịch"
+                style={[styles.picker, { borderColor: accentColor + "20" }]}
                 dropDownContainerStyle={[
                   styles.pickerDropdown,
-                  { borderColor: "#BFDBFE" },
+                  { borderColor: accentColor + "20" },
                 ]}
                 textStyle={styles.pickerText}
-                selectedItemLabelStyle={{ fontWeight: "700", color: "#2563EB" }}
+                selectedItemLabelStyle={{ fontWeight: "700", color: accentColor }}
                 ArrowUpIconComponent={() => (
-                  <Text style={[styles.pickerArrow, { color: "#2563EB" }]}>
+                  <Text style={[styles.pickerArrow, { color: accentColor }]}>
                     ▲
                   </Text>
                 )}
                 ArrowDownIconComponent={() => (
-                  <Text style={[styles.pickerArrow, { color: "#2563EB" }]}>
+                  <Text style={[styles.pickerArrow, { color: accentColor }]}>
                     ▼
                   </Text>
                 )}
               />
             </View>
 
-            {/* Campaign info banner */}
-            <View
-              style={[
-                styles.infoBanner,
-                { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" },
-              ]}
-            >
-              <View
-                style={[styles.infoIconBox, { backgroundColor: "#DBEAFE" }]}
-              >
-                <Leaf size={18} color="#2563EB" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.infoTitle, { color: "#1E3A8A" }]}>
-                  Chiến dịch: {currentSchool?.name}
-                </Text>
-                <Text style={[styles.infoDesc, { color: "#3B82F6" }]}>
-                  {currentSchool?.description}
-                </Text>
-              </View>
-            </View>
+            {selectedCampaignId ? (
+              <>
+                {/* Campaign info banner */}
+                <View
+                  style={[
+                    styles.infoBanner,
+                    { backgroundColor: accentColor + "08", borderColor: accentColor + "20" },
+                  ]}
+                >
+                  <View
+                    style={[styles.infoIconBox, { backgroundColor: accentColor + "15" }]}
+                  >
+                    <Leaf size={18} color={accentColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.infoTitle, { color: accentColor }]}>
+                      Chiến dịch: {currentCampaign?.campaignName}
+                    </Text>
+                    <Text style={[styles.infoDesc, { color: "#6B7280" }]}>
+                      Xếp hạng dựa trên tổng số xu và độ chính xác
+                    </Text>
+                  </View>
+                </View>
 
-            {/* Leaderboard */}
-            <View style={styles.list}>
-              {currentSchool?.data.map((item) => (
-                <LeaderRow
-                  key={item.rank}
-                  item={item}
-                  isMyChild={isMyChild(item)}
-                  accentColor="#059669"
-                  showSchool={false}
-                />
-              ))}
-            </View>
-          </FadeInView>
-        )}
-
-        {/* ── Partnership Tab ── */}
-        {activeTab === "partnership" && (
-          <FadeInView
-            from={{ opacity: 0, translateY: 10 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: "timing", duration: 280 }}
-          >
-            {/* Campaign picker */}
-            <View style={{ zIndex: 200, marginBottom: 12 }}>
-              <DropDownPicker
-                open={partnerOpen}
-                value={selectedPartnerId}
-                items={partnerItems}
-                setOpen={(v) => {
-                  setPartnerOpen(v);
-                  setChildOpen(false);
-                  setSchoolOpen(false);
-                }}
-                setValue={setSelectedPartnerId}
-                style={[styles.picker, { borderColor: "#DDD6FE" }]}
-                dropDownContainerStyle={[
-                  styles.pickerDropdown,
-                  { borderColor: "#DDD6FE" },
-                ]}
-                textStyle={styles.pickerText}
-                selectedItemLabelStyle={{ fontWeight: "700", color: "#7C3AED" }}
-                ArrowUpIconComponent={() => (
-                  <Text style={[styles.pickerArrow, { color: "#7C3AED" }]}>
-                    ▲
-                  </Text>
+                {/* Leaderboard */}
+                {refreshing ? (
+                  <ActivityIndicator size="small" color={accentColor} style={{ marginTop: 20 }} />
+                ) : (
+                  <View style={styles.list}>
+                    {leaderboardData.length > 0 ? (
+                      leaderboardData.map((item, idx) => (
+                        <LeaderRow
+                          key={item.studentId || idx}
+                          item={item}
+                          isMyChild={isMyChild(item)}
+                          accentColor={accentColor}
+                          showSchool={true}
+                        />
+                      ))
+                    ) : (
+                      <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>Chưa có dữ liệu xếp hạng</Text>
+                      </View>
+                    )}
+                  </View>
                 )}
-                ArrowDownIconComponent={() => (
-                  <Text style={[styles.pickerArrow, { color: "#7C3AED" }]}>
-                    ▼
-                  </Text>
-                )}
-              />
-            </View>
-
-            {/* Campaign info banner */}
-            <View
-              style={[
-                styles.infoBanner,
-                { backgroundColor: "#F5F3FF", borderColor: "#DDD6FE" },
-              ]}
-            >
-              <View
-                style={[styles.infoIconBox, { backgroundColor: "#EDE9FE" }]}
-              >
-                <Cloud size={18} color="#7C3AED" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.infoTitle, { color: "#4C1D95" }]}>
-                  Chiến dịch: {currentPartner?.name}
-                </Text>
-                <Text style={[styles.infoDesc, { color: "#7C3AED" }]}>
-                  {currentPartner?.description}
+              </>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>
+                  {selectedChildId ? "Bé chưa tham gia chiến dịch nào" : "Vui lòng chọn học sinh"}
                 </Text>
               </View>
-            </View>
-
-            {/* Leaderboard */}
-            <View style={styles.list}>
-              {currentPartner?.data.map((item) => (
-                <LeaderRow
-                  key={item.rank}
-                  item={item}
-                  isMyChild={isMyChild(item)}
-                  accentColor="#7C3AED"
-                  showSchool
-                />
-              ))}
-            </View>
+            )}
           </FadeInView>
         )}
       </ScrollView>
@@ -643,4 +477,16 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   accuracyLabel: { fontSize: 10, color: "#9CA3AF" },
+
+  emptyContainer: {
+    marginTop: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#9CA3AF",
+    textAlign: "center",
+  },
 });
