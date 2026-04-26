@@ -263,7 +263,6 @@ export default function ParentProfile() {
               </View>
             )}
           </FadeInView>
-
         </ScrollView>
       )}
     </View>
