@@ -75,6 +75,8 @@ const STATUS_MAP = {
 const FILTER_STATUSES = [
   { value: "ALL", label: "Tất cả trạng thái" },
   { value: "PENDING", label: "Đang chờ xử lý" },
+  { value: "APPROVED", label: "Đã được phê duyệt" },
+  { value: "REJECTED", label: "Bị từ chối" },
   { value: "DELIVERED", label: "Đã giao (chờ xác nhận)" },
   { value: "CONFIRMED", label: "Đã nhận quà" },
 ];
@@ -164,7 +166,9 @@ function RewardHistoryCard({ item, onCancel, onConfirm }) {
           </View>
           <View style={styles.coinInfoRow}>
             <Coins size={14} color="#D97706" />
-            <Text style={styles.coinText}>{item.totalCoin || item.totalCoins} xu</Text>
+            <Text style={styles.coinText}>
+              {item.totalCoin || item.totalCoins} xu
+            </Text>
             <Text style={styles.quantityText}>x{item.quantity}</Text>
           </View>
         </View>
@@ -201,7 +205,8 @@ function RewardHistoryCard({ item, onCancel, onConfirm }) {
 
 // ─── Partnership Reward Card ──────────────────────────────────────────────────
 function PartnershipRewardCard({ item, onConfirm }) {
-  const status = PARTNERSHIP_STATUS_MAP[item.status] || PARTNERSHIP_STATUS_MAP.PREPARING;
+  const status =
+    PARTNERSHIP_STATUS_MAP[item.status] || PARTNERSHIP_STATUS_MAP.PREPARING;
   const StatusIcon = status.icon;
 
   return (
@@ -249,7 +254,9 @@ function PartnershipRewardCard({ item, onConfirm }) {
           </View>
           <View style={styles.coinInfoRow}>
             <Flag size={14} color="#059669" />
-            <Text style={[styles.coinText, { color: "#059669" }]}>Hạng {item.rankPosition}</Text>
+            <Text style={[styles.coinText, { color: "#059669" }]}>
+              Hạng {item.rankPosition}
+            </Text>
             <Text style={styles.quantityText}>Điểm: {item.totalScore}</Text>
           </View>
         </View>
@@ -258,7 +265,9 @@ function PartnershipRewardCard({ item, onConfirm }) {
       {item.shippingTrackingCode && (
         <View style={styles.trackingInfo}>
           <Package size={14} color="#6B7280" />
-          <Text style={styles.trackingText}>Mã vận đơn: {item.shippingTrackingCode}</Text>
+          <Text style={styles.trackingText}>
+            Mã vận đơn: {item.shippingTrackingCode}
+          </Text>
         </View>
       )}
 
@@ -345,7 +354,10 @@ function ChildInfoCard({ student }) {
             <Text style={styles.infoText}>{student.studentCode}</Text>
             <Text style={styles.dividerChar}>|</Text>
             <GraduationCap size={12} color="#6B7280" />
-            <Text style={styles.infoText}>Lớp {student.gradeLevel}{student.className}</Text>
+            <Text style={styles.infoText}>
+              Lớp {student.gradeLevel}
+              {student.className}
+            </Text>
           </View>
         </View>
 
@@ -369,7 +381,10 @@ function ChildInfoCard({ student }) {
         <View style={styles.statChip}>
           <Clock size={13} color="#6B7280" />
           <Text style={styles.statChipText}>
-            Sinh: {student.dob ? new Date(student.dob).toLocaleDateString("vi-VN") : "N/A"}
+            Sinh:{" "}
+            {student.dob
+              ? new Date(student.dob).toLocaleDateString("vi-VN")
+              : "N/A"}
           </Text>
         </View>
       </View>

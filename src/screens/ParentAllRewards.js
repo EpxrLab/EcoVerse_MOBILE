@@ -13,7 +13,11 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useFocusEffect, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+} from "@react-navigation/native";
 import { FadeInView } from "../components/FadeInView";
 import {
   ArrowLeft,
@@ -52,7 +56,7 @@ const TABS = [
   },
 ];
 
-const TYPE_EMOJI = { PHYSICAL: "🎁", DIGITAL: "✨", VOUCHER: "🎫" };
+const TYPE_EMOJI = { PHYSICAL: "🎁", VOUCHER: "🎫" };
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
@@ -62,7 +66,9 @@ function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
 
   const outOfStock = !reward.isUnlimited && reward.stockQuantity === 0;
   const inactive = !reward.isActive;
-  const notEnoughCoins = student ? student.totalCoin < reward.coinCost * quantity : false;
+  const notEnoughCoins = student
+    ? student.totalCoin < reward.coinCost * quantity
+    : false;
   const isDisable = outOfStock || inactive || notEnoughCoins;
 
   // Reset quantity when modal opens/changes reward
@@ -152,7 +158,10 @@ function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
             <View
               style={[
                 styles.detailStatusBadge,
-                { backgroundColor: (outOfStock || inactive) ? "#FEF2F2" : "#ECFDF5" },
+                {
+                  backgroundColor:
+                    outOfStock || inactive ? "#FEF2F2" : "#ECFDF5",
+                },
               ]}
             >
               {!(outOfStock || inactive) ? (
@@ -180,7 +189,9 @@ function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
             <Text style={styles.balanceLabel}>Số dư của bé:</Text>
             <View style={styles.balanceRow}>
               <Coins size={14} color="#D97706" />
-              <Text style={styles.balanceValue}>{student?.totalCoin || 0} xu</Text>
+              <Text style={styles.balanceValue}>
+                {student?.totalCoin || 0} xu
+              </Text>
             </View>
           </View>
 
@@ -203,7 +214,10 @@ function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
                   ]}
                   disabled={quantity <= 1}
                 >
-                  <Minus size={16} color={quantity <= 1 ? "#D1D5DB" : "#374151"} />
+                  <Minus
+                    size={16}
+                    color={quantity <= 1 ? "#D1D5DB" : "#374151"}
+                  />
                 </TouchableOpacity>
                 <View style={styles.qtyBox}>
                   <Text style={styles.qtyText}>{quantity}</Text>
@@ -213,12 +227,21 @@ function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
                   style={[
                     styles.qtyBtn,
                     !reward.isUnlimited &&
-                    quantity >= reward.stockQuantity &&
-                    styles.qtyBtnDisabled,
+                      quantity >= reward.stockQuantity &&
+                      styles.qtyBtnDisabled,
                   ]}
-                  disabled={!reward.isUnlimited && quantity >= reward.stockQuantity}
+                  disabled={
+                    !reward.isUnlimited && quantity >= reward.stockQuantity
+                  }
                 >
-                  <Plus size={16} color={(!reward.isUnlimited && quantity >= reward.stockQuantity) ? "#D1D5DB" : "#374151"} />
+                  <Plus
+                    size={16}
+                    color={
+                      !reward.isUnlimited && quantity >= reward.stockQuantity
+                        ? "#D1D5DB"
+                        : "#374151"
+                    }
+                  />
                 </TouchableOpacity>
               </View>
             )}
@@ -258,7 +281,12 @@ function RewardDetailModal({ reward, visible, onClose, tabColor, student }) {
             ) : (
               <Gift size={18} color="#FFFFFF" />
             )}
-            <Text style={[styles.redeemSubmitText, isDisable && { color: "#9CA3AF" }]}>
+            <Text
+              style={[
+                styles.redeemSubmitText,
+                isDisable && { color: "#9CA3AF" },
+              ]}
+            >
               {inactive
                 ? "Ngưng hoạt động"
                 : outOfStock
@@ -373,11 +401,12 @@ export function ParentAllRewards() {
       console.log(error);
     }
   };
+  console.log(rewards);
 
   useFocusEffect(
     useCallback(() => {
       fetchRewards();
-    }, [])
+    }, []),
   );
 
   const currentTab = TABS.find((t) => t.key === activeTab);

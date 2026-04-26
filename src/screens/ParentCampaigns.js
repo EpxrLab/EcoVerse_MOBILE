@@ -422,7 +422,9 @@ export default function ParentCampaigns() {
     (i) => i.parentApprovalStatus === "INVITED",
   );
   const respondedList = invitations.filter(
-    (i) => i.parentApprovalStatus === "APPROVED" || i.parentApprovalStatus === "REJECTED",
+    (i) =>
+      i.parentApprovalStatus === "APPROVED" ||
+      i.parentApprovalStatus === "REJECTED",
   );
   const filteredResponded =
     dropValue === "ALL"
@@ -482,7 +484,8 @@ export default function ParentCampaigns() {
         Toast.show({
           type: "error",
           text1: "Từ chối tham gia thất bại!",
-          text2: "Thao tác từ chối tham gia chiến dịch của bạn chưa được ghi nhận.",
+          text2:
+            "Thao tác từ chối tham gia chiến dịch của bạn chưa được ghi nhận.",
         });
       }
       setRejectVisible(false);
@@ -541,7 +544,9 @@ export default function ParentCampaigns() {
               </View>
               {pendingList.length > 0 && (
                 <View style={styles.heroBadge}>
-                  <Text style={styles.heroBadgeText}>{pendingList.length} mới</Text>
+                  <Text style={styles.heroBadgeText}>
+                    {pendingList.length} mới
+                  </Text>
                 </View>
               )}
             </FadeInView>
@@ -562,7 +567,10 @@ export default function ParentCampaigns() {
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
-                  style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                  style={[
+                    styles.tab,
+                    activeTab === tab.key && styles.tabActive,
+                  ]}
                   onPress={() => setActiveTab(tab.key)}
                   activeOpacity={0.8}
                 >
@@ -603,7 +611,9 @@ export default function ParentCampaigns() {
               <View style={{ zIndex: 1100 }}>
                 <View style={styles.filterLabelRow}>
                   <Filter size={13} color="#6B7280" />
-                  <Text style={styles.filterLabel}>Lọc theo kết quả phản hồi</Text>
+                  <Text style={styles.filterLabel}>
+                    Lọc theo kết quả phản hồi
+                  </Text>
                   <Text style={styles.filterCount}>
                     {filteredResponded.length} kết quả
                   </Text>
@@ -617,7 +627,10 @@ export default function ParentCampaigns() {
                   style={styles.picker}
                   dropDownContainerStyle={styles.pickerDropdown}
                   textStyle={styles.pickerText}
-                  selectedItemLabelStyle={{ fontWeight: "700", color: "#059669" }}
+                  selectedItemLabelStyle={{
+                    fontWeight: "700",
+                    color: "#059669",
+                  }}
                   ArrowUpIconComponent={() => (
                     <Text style={styles.pickerArrow}>▲</Text>
                   )}
