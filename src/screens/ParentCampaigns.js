@@ -11,6 +11,7 @@ import {
   Pressable,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { FadeInView } from "../components/FadeInView";
 import {
@@ -23,6 +24,7 @@ import {
   AlertTriangle,
   Filter,
   Info,
+  Trophy,
 } from "lucide-react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { MobileHeader } from "../components/MobileHeader";
@@ -32,7 +34,9 @@ import {
   getAllCamapaignInvitations,
   getCampaignInvitationHistory,
   rejectInvitation,
+  getCampaignInvitationDetail,
 } from "../services";
+import { useNavigation } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
 
 const { height, width } = Dimensions.get("window");
@@ -248,11 +252,14 @@ function RejectReasonModal({ invitation, visible, onClose, onConfirm }) {
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 function DetailModal({
   invitation,
+  fullDetail,
   visible,
   onClose,
   onAccept,
   onRejectPress,
+  loading,
 }) {
+  const navigation = useNavigation();
   if (!invitation) return null;
   const cfg =
     STATUS_CONFIG[invitation.parentApprovalStatus] || STATUS_CONFIG.INVITED;
@@ -269,10 +276,16 @@ function DetailModal({
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.detailSheet}>
         <View style={styles.sheetHandle} />
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
+        {loading ? (
+          <View style={styles.detailLoading}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>Đang tải chi tiết...</Text>
+          </View>
+        ) : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40 }}
+          >
           {/* Campaign name */}
           <View style={styles.detailHeaderRow}>
             <View style={styles.flagBox}>
@@ -330,6 +343,86 @@ function DetailModal({
             </View>
           )}
 
+          {/* Description */}
+          {fullDetail?.description && (
+            <View style={styles.detailDescSection}>
+              <Text style={styles.sectionTitle}>Thông tin chiến dịch</Text>
+              <Text style={styles.detailDesc}>{fullDetail.description}</Text>
+            </View>
+          )}
+
+          {/* Rounds */}
+          {fullDetail?.rounds?.length > 0 && (
+            <View style={styles.detailSection}>
+              <Text style={styles.sectionTitle}>Các vòng thi</Text>
+              {fullDetail.rounds.map((r, idx) => (
+                <View key={r.roundId || idx} style={styles.roundItem}>
+                  <View style={styles.roundIndicator} />
+                  <Text style={styles.roundName}>{r.roundName}</Text>
+                  {invitation.parentApprovalStatus === "APPROVED" && (
+                    <TouchableOpacity
+                      style={styles.viewLeaderboardBtn}
+                      onPress={() => {
+                        onClose();
+                        navigation.navigate("ParentStats", {
+                          campaignId: fullDetail.campaignId,
+                          roundId: r.roundId,
+                        });
+                      }}
+                    >
+                      <Trophy size={14} color="#059669" />
+                      <Text style={styles.viewLeaderboardText}>Xếp hạng</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Invited Children */}
+          {fullDetail?.invitedChildren?.length > 0 && (
+            <View style={styles.detailSection}>
+              <Text style={styles.sectionTitle}>Học sinh tham gia</Text>
+              {fullDetail.invitedChildren.map((child, idx) => (
+                <View key={child.studentId || idx} style={styles.childItemRow}>
+                  <View style={styles.childAvatar}>
+                    <User size={16} color="#6B7280" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.childName}>{child.fullName}</Text>
+                    <Text style={styles.childClass}>
+                      Lớp {child.gradeLevel}{child.className}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.childStatusBadge,
+                      {
+                        backgroundColor:
+                          STATUS_CONFIG[child.parentApprovalStatus]?.bg ||
+                          "#F3F4F6",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.childStatusText,
+                        {
+                          color:
+                            STATUS_CONFIG[child.parentApprovalStatus]?.color ||
+                            "#9CA3AF",
+                        },
+                      ]}
+                    >
+                      {STATUS_CONFIG[child.parentApprovalStatus]?.label ||
+                        "Chờ"}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Info note */}
           <View style={styles.infoNote}>
             <Info size={14} color="#2563EB" />
@@ -372,6 +465,7 @@ function DetailModal({
             )}
           </View>
         </ScrollView>
+        )}
       </View>
     </Modal>
   );
@@ -382,7 +476,9 @@ export default function ParentCampaigns() {
   const [invitations, setInvitations] = useState([]);
   const [activeTab, setActiveTab] = useState("pending");
   const [selected, setSelected] = useState(null);
+  const [fullDetail, setFullDetail] = useState(null);
   const [detailVisible, setDetailVisible] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectVisible, setRejectVisible] = useState(false);
 
@@ -495,9 +591,20 @@ export default function ParentCampaigns() {
     }
   };
 
-  const handleViewDetail = (item) => {
+  const handleViewDetail = async (item) => {
     setSelected(item);
     setDetailVisible(true);
+    setLoadingDetail(true);
+    try {
+      const res = await getCampaignInvitationDetail(item.campaignId);
+      if (res?.data) {
+        setFullDetail(res.data);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoadingDetail(false);
+    }
   };
 
   return (
@@ -675,10 +782,15 @@ export default function ParentCampaigns() {
       {/* Detail modal */}
       <DetailModal
         invitation={selected}
+        fullDetail={fullDetail}
         visible={detailVisible}
-        onClose={() => setDetailVisible(false)}
+        onClose={() => {
+          setDetailVisible(false);
+          setFullDetail(null);
+        }}
         onAccept={handleAccept}
         onRejectPress={handleRejectPress}
+        loading={loadingDetail}
       />
 
       {/* Reject reason modal */}
@@ -798,6 +910,118 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   pickerText: { fontSize: 13, color: "#111827" },
+  pickerArrow: { fontSize: 10, color: "#9CA3AF" },
+
+  // Detail Modal Sections
+  detailSection: {
+    marginTop: 20,
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#374151",
+    marginBottom: 10,
+  },
+  detailDescSection: {
+    marginTop: 16,
+    paddingHorizontal: 4,
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 10,
+  },
+  detailDesc: {
+    fontSize: 13,
+    color: "#4B5563",
+    lineHeight: 18,
+  },
+
+  // Rounds
+  roundItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+  },
+  roundIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#059669",
+    marginRight: 10,
+  },
+  roundName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  viewLeaderboardBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 6,
+  },
+  viewLeaderboardText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#059669",
+  },
+
+  // Children
+  childItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  childAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  childName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  childClass: {
+    fontSize: 11,
+    color: "#9CA3AF",
+  },
+  childStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  childStatusText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  detailLoading: {
+    padding: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
   pickerArrow: { fontSize: 9, color: "#9CA3AF" },
 
   // Invitation Card
