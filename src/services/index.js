@@ -127,9 +127,20 @@ const getCampaignInvitationHistory = async () => {
   }
 };
 
-const getCampaignLeaderboard = async (campaignId) => {
+const getCampaignInvitationDetail = async (campaignId) => {
   try {
-    const res = await axios.get(`/campaigns/${campaignId}/leaderboard`);
+    const res = await axios.get(
+      `/parent/campaign-invitations/${campaignId}/detail`,
+    );
+    return res.data;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const getRoundLeaderboard = async (roundId) => {
+  try {
+    const res = await axios.get(`/campaign-rounds/${roundId}/leaderboard`);
     return res.data;
   } catch (error) {
     console.log(error);
@@ -224,6 +235,7 @@ export {
   forgotPassword,
   verifyResetPassword,
   changePassword,
-  getCampaignLeaderboard,
   getCampaignInvitationHistory,
+  getCampaignInvitationDetail,
+  getRoundLeaderboard,
 };
