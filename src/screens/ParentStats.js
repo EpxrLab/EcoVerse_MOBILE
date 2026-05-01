@@ -3,19 +3,19 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
 import { FadeInView } from "../components/FadeInView";
-import { Leaf, Cloud, Trophy } from "lucide-react-native";
+import { Leaf, Trophy } from "lucide-react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { MobileHeader } from "../components/MobileHeader";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
 import {
   getParentChildren,
   getCampaignInvitationHistory,
-  getCampaignLeaderboard,
+  getCampaignInvitationDetail,
+  getRoundLeaderboard,
 } from "../services";
 
 // ─── Rank Badge ───────────────────────────────────────────────────────────────
@@ -109,8 +109,15 @@ export default function ParentStats() {
 
   // Leaderboard data
   const [leaderboardData, setLeaderboardData] = useState([]);
+  // Rounds state
+  const [rounds, setRounds] = useState([]);
+  const [roundOpen, setRoundOpen] = useState(false);
+  const [selectedRoundId, setSelectedRoundId] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const route = useRoute();
 
   const fetchData = async () => {
     try {
@@ -139,7 +146,15 @@ export default function ParentStats() {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [])
+
+      // Handle navigation params
+      if (route.params?.campaignId) {
+        setSelectedCampaignId(route.params.campaignId);
+        if (route.params.roundId) {
+          setSelectedRoundId(route.params.roundId);
+        }
+      }
+    }, [route.params])
   );
 
   // Filter campaigns for the selected child. 
@@ -153,32 +168,74 @@ export default function ParentStats() {
     if (childCampaigns.length > 0) {
       if (!selectedCampaignId || !childCampaigns.find(c => c.campaignId === selectedCampaignId)) {
         setSelectedCampaignId(childCampaigns[0].campaignId);
+        setSelectedRoundId(null);
       }
     } else {
       setSelectedCampaignId(null);
+      setSelectedRoundId(null);
+      setRounds([]);
       setLeaderboardData([]);
     }
   }, [selectedChildId, campaigns]);
 
-  // Fetch leaderboard when campaign changes
+  // Fetch rounds when campaign changes
+  useEffect(() => {
+    if (selectedCampaignId) {
+      const fetchRounds = async () => {
+        try {
+          const detailRes = await getCampaignInvitationDetail(selectedCampaignId);
+          if (detailRes?.data?.rounds) {
+            setRounds(detailRes.data.rounds);
+            // If navigated with a specific roundId, keep it. 
+            // Otherwise, if current selectedRoundId is not in the new rounds list, select first.
+            if (route.params?.roundId && detailRes.data.rounds.find(r => r.roundId === route.params.roundId)) {
+              setSelectedRoundId(route.params.roundId);
+            } else if (detailRes.data.rounds.length > 0) {
+              setSelectedRoundId(detailRes.data.rounds[0].roundId);
+            }
+          }
+        } catch (err) {
+          console.log("Error fetching rounds:", err);
+          setRounds([]);
+        }
+      };
+      fetchRounds();
+    } else {
+      setRounds([]);
+      setSelectedRoundId(null);
+    }
+  }, [selectedCampaignId]);
+
+  // Fetch leaderboard when campaign or round changes
   useEffect(() => {
     if (selectedCampaignId) {
       const fetchLeaderboard = async () => {
         try {
           setRefreshing(true);
-          const res = await getCampaignLeaderboard(selectedCampaignId);
+          let res;
+          if (selectedRoundId) {
+            res = await getRoundLeaderboard(selectedRoundId);
+          } else {
+            setLeaderboardData([]);
+            setRefreshing(false);
+            return;
+          }
+
           if (res?.data) {
             setLeaderboardData(res.data);
+          } else {
+            setLeaderboardData([]);
           }
         } catch (error) {
           console.log(error);
+          setLeaderboardData([]);
         } finally {
           setRefreshing(false);
         }
       };
       fetchLeaderboard();
     }
-  }, [selectedCampaignId]);
+  }, [selectedCampaignId, selectedRoundId]);
 
   const childItems = children.map((c) => ({
     label: c.studentFullName || c.fullName || c.studentName || "Học sinh",
@@ -188,6 +245,11 @@ export default function ParentStats() {
   const campaignItems = childCampaigns.map((c) => ({
     label: c.campaignName,
     value: c.campaignId,
+  }));
+
+  const roundItems = rounds.map((r) => ({
+    label: r.roundName,
+    value: r.roundId,
   }));
 
   const selectedChild = children.find((c) => c.studentId === selectedChildId);
@@ -252,7 +314,10 @@ export default function ParentStats() {
                   setCampaignOpen(v);
                   setChildOpen(false);
                 }}
-                setValue={setSelectedCampaignId}
+                setValue={(val) => {
+                  setSelectedCampaignId(val);
+                  setSelectedRoundId(null);
+                }}
                 placeholder="Chọn chiến dịch"
                 style={[styles.picker, { borderColor: accentColor + "20" }]}
                 dropDownContainerStyle={[
@@ -273,6 +338,41 @@ export default function ParentStats() {
                 )}
               />
             </View>
+
+            {/* Round picker */}
+            {selectedCampaignId && (
+              <View style={{ zIndex: 1000, marginBottom: 12 }}>
+                <DropDownPicker
+                  open={roundOpen}
+                  value={selectedRoundId}
+                  items={roundItems}
+                  setOpen={(v) => {
+                    setRoundOpen(v);
+                    setCampaignOpen(false);
+                    setChildOpen(false);
+                  }}
+                  setValue={setSelectedRoundId}
+                  placeholder="Chọn vòng thi"
+                  style={[styles.picker, { borderColor: accentColor + "20" }]}
+                  dropDownContainerStyle={[
+                    styles.pickerDropdown,
+                    { borderColor: accentColor + "20" },
+                  ]}
+                  textStyle={styles.pickerText}
+                  selectedItemLabelStyle={{ fontWeight: "700", color: accentColor }}
+                  ArrowUpIconComponent={() => (
+                    <Text style={[styles.pickerArrow, { color: accentColor }]}>
+                      ▲
+                    </Text>
+                  )}
+                  ArrowDownIconComponent={() => (
+                    <Text style={[styles.pickerArrow, { color: accentColor }]}>
+                      ▼
+                    </Text>
+                  )}
+                />
+              </View>
+            )}
 
             {selectedCampaignId ? (
               <>
