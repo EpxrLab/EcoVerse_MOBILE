@@ -497,12 +497,24 @@ export default function ParentCampaigns() {
         getCampaignInvitationHistory(),
       ]);
 
-      const allInvitations = [
+      const allData = [
         ...(invitedRes?.data || []),
         ...(historyRes?.data || []),
       ];
 
-      setInvitations(allInvitations);
+      // Loại bỏ trùng lặp dựa trên campaignId và studentId
+      const uniqueInvitations = [];
+      const seen = new Set();
+
+      for (const item of allData) {
+        const key = `${item.campaignId}-${item.studentId}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueInvitations.push(item);
+        }
+      }
+
+      setInvitations(uniqueInvitations);
     } catch (error) {
       console.log(error);
     }
@@ -613,9 +625,7 @@ export default function ParentCampaigns() {
 
       <FlatList
         data={currentList}
-        keyExtractor={(item, index) =>
-          item.campaignId ? `${item.campaignId}-${index}` : `inv-${index}`
-        }
+        keyExtractor={(item) => `${item.campaignId}-${item.studentId}`}
         renderItem={({ item, index }) => (
           <FadeInView
             from={{ opacity: 0, translateY: 10 }}
